@@ -1,0 +1,9 @@
+# Godot generated files
+.godot/
+
+# Local brainstorming previews
+.superpowers/
+
+# Windows export output
+build/
+
