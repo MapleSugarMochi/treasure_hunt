@@ -1,0 +1,11 @@
+class_name GameConfig
+extends RefCounted
+
+const TILE_SIZE := 16
+const PIXELS_PER_METRE := 16.0
+const MIN_TREASURE_DISTANCE_METRES := 18.0
+const PLAYER_SPEED_PIXELS_PER_SECOND := 72.0
+const CELEBRATION_SECONDS := 4.0
+const MAP_WIDTH_TILES := 96
+const MAP_HEIGHT_TILES := 72
+const VIEWPORT_SIZE := Vector2i(640, 360)
