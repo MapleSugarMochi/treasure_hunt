@@ -7,3 +7,6 @@
 
 # Windows export output
 build/
+
+*.tmp
+*.log
