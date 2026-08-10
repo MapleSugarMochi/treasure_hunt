@@ -3,7 +3,7 @@
 
 # Local brainstorming previews
 .superpowers/
+.worktrees/
 
 # Windows export output
 build/
-
