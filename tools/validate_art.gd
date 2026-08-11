@@ -11,6 +11,11 @@ const EXPECTED := {
 const FONT_PATH := "res://assets/fonts/NotoSansCJKsc-Regular.otf"
 const PALETTE_PATH := "res://assets/source/palette.md"
 const EXPECTED_PALETTE_COLORS := 17
+const PROP_RUNTIME_REGIONS := [
+    {"label": "orange_tree", "rect": Rect2i(96, 0, 64, 96), "transparent_border": true},
+    {"label": "gold_tree", "rect": Rect2i(160, 0, 64, 96), "transparent_border": true},
+    {"label": "bench", "rect": Rect2i(208, 96, 48, 32), "transparent_border": false},
+]
 
 # These regions correspond to the cells/silhouettes consumed by the game.
 # Checking each one catches an accidentally blank frame while still allowing
@@ -28,9 +33,9 @@ const KEY_REGIONS := {
     ],
     "props.png": [
         {"label": "building", "rect": Rect2i(0, 20, 92, 68)},
-        {"label": "orange_prop", "rect": Rect2i(91, 14, 52, 48)},
-        {"label": "gold_prop", "rect": Rect2i(139, 19, 50, 45)},
-        {"label": "bench", "rect": Rect2i(202, 57, 45, 16)},
+        {"label": "orange_tree", "rect": Rect2i(96, 0, 64, 96)},
+        {"label": "gold_tree", "rect": Rect2i(160, 0, 64, 96)},
+        {"label": "bench", "rect": Rect2i(208, 96, 48, 32)},
     ],
     "player.png": [
         {"label": "down_idle", "rect": Rect2i(0, 0, 24, 32)},
@@ -78,6 +83,8 @@ func _initialize() -> void:
         var pixel_result := _validate_pixels(file_name, image, approved_rgb)
         failures += pixel_result.failures
         failures += _validate_regions(file_name, image)
+        if file_name == "props.png":
+            failures += _validate_prop_layout(image)
         print("ART ATLAS %s size=%dx%d opaque=%d colors=%d" % [
             file_name,
             image.get_width(),
@@ -199,6 +206,43 @@ func _validate_regions(file_name: String, image: Image) -> int:
             push_error("Blank key region in %s: %s" % [file_name, region.label])
             failures += 1
     return failures
+
+func _validate_prop_layout(image: Image) -> int:
+    var failures := 0
+    for index in range(PROP_RUNTIME_REGIONS.size()):
+        var region: Dictionary = PROP_RUNTIME_REGIONS[index]
+        var rect: Rect2i = region.rect
+        if rect.position.x < 0 or rect.position.y < 0 or rect.end.x > image.get_width() or rect.end.y > image.get_height():
+            push_error("Prop region out of bounds: %s %s" % [region.label, rect])
+            failures += 1
+            continue
+        for other_index in range(index + 1, PROP_RUNTIME_REGIONS.size()):
+            var other: Rect2i = PROP_RUNTIME_REGIONS[other_index].rect
+            if rect.intersects(other):
+                push_error("Overlapping prop regions: %s and %s" % [region.label, PROP_RUNTIME_REGIONS[other_index].label])
+                failures += 1
+        if region.transparent_border and not _has_transparent_border(image, rect):
+            push_error("Tree art touches runtime region border: %s" % region.label)
+            failures += 1
+        var colors := {}
+        for y in range(rect.position.y, rect.end.y):
+            for x in range(rect.position.x, rect.end.x):
+                var pixel := image.get_pixel(x, y)
+                if pixel.a > 0.0:
+                    colors[pixel.to_rgba32()] = true
+        if region.label.ends_with("tree") and colors.size() < 5:
+            push_error("Tree region lacks color detail: %s colors=%d" % [region.label, colors.size()])
+            failures += 1
+    return failures
+
+func _has_transparent_border(image: Image, rect: Rect2i) -> bool:
+    for x in range(rect.position.x, rect.end.x):
+        if image.get_pixel(x, rect.position.y).a > 0.0 or image.get_pixel(x, rect.end.y - 1).a > 0.0:
+            return false
+    for y in range(rect.position.y, rect.end.y):
+        if image.get_pixel(rect.position.x, y).a > 0.0 or image.get_pixel(rect.end.x - 1, y).a > 0.0:
+            return false
+    return true
 
 func _validate_font() -> int:
     if not FileAccess.file_exists(FONT_PATH):

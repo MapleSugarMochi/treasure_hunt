@@ -1,7 +1,7 @@
 # Detailed Tree Sprites Design
 
 Date: 2026-08-11
-Status: Approved visual direction; pending implementation planning
+Status: Implemented and verified
 
 ## Objective
 
@@ -16,15 +16,15 @@ Both trees belong to one sprite family: hard-edged 16-bit pixel art, dark-brown 
 - Use six interlocking leaf clusters to form a wide, dense, rounded crown.
 - Use orange as the main plane, gold on upper-facing cluster edges, and deep green in interior gaps.
 - Reveal only short branch segments between clusters so the tree remains full and friendly.
-- Keep the occupied artwork within a maximum 54-by-80-pixel box inside its 64-by-96-pixel region.
+- Keep the occupied artwork within a maximum 61-by-84-pixel box inside its 64-by-96-pixel region.
 - Keep the root/trunk baseline at local y=88 so the existing centered sprite anchor remains visually stable.
 
 ### Gold tree: asymmetric umbrella crown
 
-- Use five offset leaf clusters to create a narrower, visibly asymmetric umbrella silhouette.
+- Use four offset leaf clusters to create a narrower, visibly asymmetric umbrella silhouette matching the final user-provided reference image.
 - Use gold as the main plane, orange on lower-facing cluster edges, and restrained deep green in inner shadow pockets.
 - Reveal a forked trunk and longer branch segments to distinguish it from the orange tree at gameplay size.
-- Keep the occupied artwork within a maximum 52-by-80-pixel box inside its 64-by-96-pixel region.
+- Keep the occupied artwork within a maximum 58-by-83-pixel box inside its 64-by-96-pixel region.
 - Use the same local y=88 root/trunk baseline as the orange tree.
 
 ## Shared constraints
@@ -91,7 +91,7 @@ Regenerate `assets/generated/props.png` from the script. Do not hand-edit the ge
 ## Acceptance criteria
 
 - The orange tree reads as a wide rounded six-cluster crown.
-- The gold tree reads as a narrower asymmetric five-cluster umbrella crown with more visible branches.
+- The gold tree reads as a narrower asymmetric four-cluster umbrella crown with more visible branches.
 - Both sprites show substantially more internal detail than the original flat blocks.
 - The atlas remains 256 by 128 pixels and uses the approved palette with hard opaque pixels.
 - Existing world geometry, collision behavior, camera behavior, treasure placement, and HUD behavior are unchanged.

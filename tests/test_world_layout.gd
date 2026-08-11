@@ -44,6 +44,34 @@ func run(t: SceneTree) -> void:
     t.assert_true(props_node != null, "world has node: Props")
     if props_node != null:
         t.assert_true(props_node.z_index > layer_z["Details"], "props draw above detail layers")
+        t.assert_true(
+            not CampusWorld.TREE_REGIONS[0].intersects(CampusWorld.TREE_REGIONS[1]),
+            "tree atlas regions do not overlap"
+        )
+        for tree_region in CampusWorld.TREE_REGIONS:
+            t.assert_true(
+                not tree_region.intersects(CampusWorld.BENCH_REGION),
+                "tree and bench atlas regions do not overlap"
+            )
+        for index in range(Layout.TREE_CELLS.size()):
+            var tree_sprite := props_node.get_node_or_null("Prop%03d" % index) as Sprite2D
+            t.assert_true(tree_sprite != null, "tree sprite exists: %d" % index)
+            if tree_sprite != null:
+                t.assert_true(tree_sprite.region_enabled, "tree sprite uses an atlas region: %d" % index)
+                t.assert_eq(
+                    tree_sprite.region_rect,
+                    CampusWorld.TREE_REGIONS[index % CampusWorld.TREE_REGIONS.size()],
+                    "tree sprite uses the expected nonoverlapping region: %d" % index
+                )
+        for index in range(Layout.BENCH_CELLS.size()):
+            var bench_sprite := props_node.get_node_or_null("Prop%03d" % (100 + index)) as Sprite2D
+            t.assert_true(bench_sprite != null, "bench sprite exists: %d" % index)
+            if bench_sprite != null:
+                t.assert_eq(
+                    bench_sprite.region_rect,
+                    CampusWorld.BENCH_REGION,
+                    "bench sprite uses the repacked atlas region: %d" % index
+                )
     t.assert_true(world.get_node_or_null("Obstacles") != null, "world has node: Obstacles")
 
     for index in range(Layout.TREASURE_CELLS.size()):

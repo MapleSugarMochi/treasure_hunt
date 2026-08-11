@@ -13,6 +13,8 @@ var path_segments: Array[PackedVector2Array] = [
 ]
 const TREE_CELLS: Array[Vector2i] = WorldLayout.TREE_CELLS
 const BENCH_CELLS: Array[Vector2i] = WorldLayout.BENCH_CELLS
+const TREE_REGIONS: Array[Rect2] = [Rect2(96, 0, 64, 96), Rect2(160, 0, 64, 96)]
+const BENCH_REGION := Rect2(208, 96, 48, 32)
 
 @onready var ground: TileMapLayer = $Ground
 @onready var paths: TileMapLayer = $Paths
@@ -80,10 +82,10 @@ func _paint_lake() -> void:
 func _add_prop_sprites() -> void:
     var texture: Texture2D = load("res://assets/generated/props.png")
     for index in range(TREE_CELLS.size()):
-        var region := Rect2(88, 0, 64, 96) if index % 2 == 0 else Rect2(136, 0, 64, 96)
+        var region: Rect2 = TREE_REGIONS[index % TREE_REGIONS.size()]
         _add_region_sprite(texture, region, WorldLayout.to_world(TREE_CELLS[index]), index)
     for index in range(BENCH_CELLS.size()):
-        _add_region_sprite(texture, Rect2(200, 48, 48, 32), WorldLayout.to_world(BENCH_CELLS[index]), 100 + index)
+        _add_region_sprite(texture, BENCH_REGION, WorldLayout.to_world(BENCH_CELLS[index]), 100 + index)
 
 func _add_region_sprite(texture: Texture2D, region: Rect2, world_position: Vector2, order: int) -> void:
     var sprite := Sprite2D.new()
