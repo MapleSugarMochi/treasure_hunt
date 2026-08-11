@@ -11,22 +11,30 @@
 
 [node name="Main" type="Node"]
 script = ExtResource("1_main_script")
+process_mode = 3
 
 [node name="GameFlow" type="Node" parent="."]
 script = ExtResource("2_flow_script")
+process_mode = 1
 
 [node name="World" parent="." instance=ExtResource("3_world_scene")]
+process_mode = 1
 
 [node name="TreasureSpawner" type="Node2D" parent="."]
 script = ExtResource("4_spawner_script")
 treasure_scene = ExtResource("5_treasure_scene")
+process_mode = 1
 
 [node name="Player" parent="." instance=ExtResource("6_player_scene")]
 z_index = 0
+process_mode = 1
 
 [node name="UI" type="CanvasLayer" parent="."]
 layer = 10
+process_mode = 1
 
 [node name="NavigationHUD" parent="UI" instance=ExtResource("7_navigation_hud_scene")]
+process_mode = 1
 
 [node name="GameUI" parent="UI" instance=ExtResource("8_game_ui_scene")]
+process_mode = 1

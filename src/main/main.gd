@@ -12,6 +12,12 @@ const GameConfig = preload("res://src/config/game_config.gd")
 
 var current_treasure: Area2D
 
+func _notification(what: int) -> void:
+    if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+        get_tree().paused = true
+    elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
+        get_tree().paused = false
+
 func _ready() -> void:
     var points: Array[Vector2] = world.get_treasure_positions()
     if points.size() < 2:
@@ -90,3 +96,6 @@ func complete_treasure_for_test() -> void:
 
 func finish_celebration_for_test() -> void:
     _on_celebration_finished()
+
+func set_window_focused_for_test(focused: bool) -> void:
+    get_tree().paused = not focused
