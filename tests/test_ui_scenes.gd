@@ -64,6 +64,11 @@ func _assert_hud_contract(t: SceneTree, hud: Node) -> void:
     t.assert_eq(hud.mouse_filter, Control.MOUSE_FILTER_IGNORE, "HUD ignores mouse input")
     t.assert_eq(hud.anchor_left, 1.0, "HUD is anchored to the top-right")
     t.assert_eq(hud.anchor_right, 1.0, "HUD is anchored to the top-right")
+    t.assert_eq(hud.size, Vector2(76, 76), "HUD uses the compact square footprint")
+    var compass_frame := hud.get_node("CompassFrame") as Panel
+    t.assert_true(compass_frame != null, "HUD has a circular compass frame")
+    if compass_frame != null:
+        t.assert_eq(compass_frame.size, Vector2(48, 48), "compass frame fits the compact badge")
     var arrow := hud.get_node("Arrow") as TextureRect
     t.assert_true(arrow != null, "HUD has an arrow")
     if arrow != null:
@@ -73,7 +78,11 @@ func _assert_hud_contract(t: SceneTree, hud: Node) -> void:
         t.assert_true(arrow_texture != null, "arrow uses an atlas texture")
         if arrow_texture != null:
             t.assert_eq(arrow_texture.region, Rect2(0, 0, 32, 32), "arrow uses the 32 by 32 ui region")
-    t.assert_true(hud.get_node("DistanceLabel") is Label, "HUD displays a distance label")
+    var distance_label := hud.get_node("DistanceLabel") as Label
+    t.assert_true(distance_label != null, "HUD displays a distance label")
+    if distance_label != null:
+        t.assert_eq(distance_label.horizontal_alignment, HORIZONTAL_ALIGNMENT_CENTER, "compact distance is centered")
+        t.assert_eq(distance_label.get_theme_font_size("font_size"), 13, "compact distance uses a readable small font")
 
 func _assert_hud_navigation(t: SceneTree, hud: Node) -> void:
     var player := Node2D.new()
@@ -86,12 +95,12 @@ func _assert_hud_navigation(t: SceneTree, hud: Node) -> void:
     hud.set_target(player, treasure)
     t.assert_true(hud.visible, "HUD is visible with valid targets")
     t.assert_approx(hud.get_node("Arrow").rotation, 0.0, 0.0001, "zero vector points right")
-    t.assert_eq(hud.get_node("DistanceLabel").text, "距离宝藏 0 米", "zero distance is labeled exactly")
+    t.assert_eq(hud.get_node("DistanceLabel").text, "0米", "zero distance is labeled exactly")
 
     treasure.global_position = Vector2(16, 0)
     hud.update_now()
     t.assert_approx(hud.get_node("Arrow").rotation, 0.0, 0.0001, "east points right")
-    t.assert_eq(hud.get_node("DistanceLabel").text, "距离宝藏 1 米", "one metre is labeled exactly")
+    t.assert_eq(hud.get_node("DistanceLabel").text, "1米", "one metre is labeled exactly")
 
     treasure.global_position = Vector2(0, 16)
     hud.update_now()
@@ -103,10 +112,10 @@ func _assert_hud_navigation(t: SceneTree, hud: Node) -> void:
 
     treasure.global_position = Vector2(288, 0)
     hud.update_now()
-    t.assert_eq(hud.get_node("DistanceLabel").text, "距离宝藏 18 米", "18 metres is labeled exactly")
+    t.assert_eq(hud.get_node("DistanceLabel").text, "18米", "18 metres is labeled exactly")
     treasure.global_position = Vector2(368, 0)
     hud.update_now()
-    t.assert_eq(hud.get_node("DistanceLabel").text, "距离宝藏 23 米", "23 metres is labeled exactly")
+    t.assert_eq(hud.get_node("DistanceLabel").text, "23米", "23 metres is labeled exactly")
 
     hud.clear_target()
     t.assert_true(not hud.visible, "clearing the target hides the HUD")

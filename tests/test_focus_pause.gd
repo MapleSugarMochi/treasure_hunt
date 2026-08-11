@@ -71,8 +71,8 @@ func _assert_project_settings(t: SceneTree) -> void:
     t.assert_eq(ProjectSettings.get_setting("display/window/energy_saving/keep_screen_on"), true, "screen stays on for exhibition")
     t.assert_eq(ProjectSettings.get_setting("rendering/renderer/rendering_method"), "gl_compatibility", "Compatibility renderer is selected")
     t.assert_eq(ProjectSettings.get_setting("rendering/textures/canvas_textures/default_texture_filter"), 0, "textures use nearest filtering")
-    t.assert_eq(ProjectSettings.get_setting("rendering/2d/snap/snap_2d_transforms_to_pixel"), true, "2D transforms snap to pixels")
-    t.assert_eq(ProjectSettings.get_setting("rendering/2d/snap/snap_2d_vertices_to_pixel"), true, "2D vertices snap to pixels")
+    t.assert_eq(ProjectSettings.get_setting("rendering/2d/snap/snap_2d_transforms_to_pixel"), false, "2D transforms remain unsnapped for smooth movement")
+    t.assert_eq(ProjectSettings.get_setting("rendering/2d/snap/snap_2d_vertices_to_pixel"), false, "2D vertices remain unsnapped for smooth movement")
     t.assert_true(not FileAccess.file_exists("res://default_bus_layout.tres"), "no audio bus resource is shipped")
 
 func _assert_operator_documents(t: SceneTree) -> void:

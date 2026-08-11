@@ -28,4 +28,4 @@ func update_now() -> void:
         return
     visible = true
     arrow.rotation = NavigationMath.direction_angle(player.global_position, treasure.global_position)
-    distance_label.text = "距离宝藏 %d 米" % NavigationMath.distance_metres(player.global_position, treasure.global_position)
+    distance_label.text = "%d米" % NavigationMath.distance_metres(player.global_position, treasure.global_position)

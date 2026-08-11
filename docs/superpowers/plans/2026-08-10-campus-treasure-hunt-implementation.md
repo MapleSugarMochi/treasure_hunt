@@ -1,7 +1,5 @@
 # Campus Treasure Hunt Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Build and export the approved Windows x64 Godot game 《校园寻宝》, including original warm-autumn pixel art, a continuous treasure loop, exact compass navigation, automated tests, and operator documentation.
 
 **Architecture:** A single `Main` scene composes focused Godot nodes for game flow, player movement, world rendering, treasure spawning, camera, and UI. Pure rules such as direction math, spawn selection, state transitions, and world reachability remain in independently testable GDScript classes; scenes communicate through signals and public methods. Original PNG atlases are generated deterministically from a checked-in pixel-art source script, then consumed by the runtime scenes.
