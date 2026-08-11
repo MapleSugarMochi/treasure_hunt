@@ -1,0 +1,178 @@
+[gd_scene load_steps=7 format=3]
+
+[ext_resource type="Script" path="res://src/ui/game_ui.gd" id="1_game_ui_script"]
+[ext_resource type="Texture2D" path="res://assets/generated/ui.png" id="2_ui_texture"]
+[ext_resource type="FontFile" path="res://assets/fonts/NotoSansCJKsc-Regular.otf" id="3_font"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_particle"]
+atlas = ExtResource("2_ui_texture")
+region = Rect2(32, 0, 32, 32)
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card"]
+bg_color = Color(0.035, 0.055, 0.09, 0.94)
+border_width_left = 3
+border_width_top = 3
+border_width_right = 3
+border_width_bottom = 3
+border_color = Color(0.95, 0.73, 0.25, 1)
+corner_radius_top_left = 12
+corner_radius_top_right = 12
+corner_radius_bottom_right = 12
+corner_radius_bottom_left = 12
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_gold"]
+direction = Vector3(0, -1, 0)
+spread = 180.0
+gravity = Vector3(0, 20, 0)
+initial_velocity_min = 12.0
+initial_velocity_max = 32.0
+scale_min = 0.35
+scale_max = 0.65
+
+[node name="GameUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("1_game_ui_script")
+
+[node name="StartOverlay" type="Control" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="StartCard" type="Panel" parent="StartOverlay"]
+layout_mode = 0
+offset_left = 170.0
+offset_top = 95.0
+offset_right = 470.0
+offset_bottom = 265.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="Title" type="Label" parent="StartOverlay/StartCard"]
+layout_mode = 0
+offset_left = 30.0
+offset_top = 24.0
+offset_right = 270.0
+offset_bottom = 72.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.82, 0.36, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 28
+text = "校园寻宝"
+horizontal_alignment = 1
+
+[node name="StartHint" type="Label" parent="StartOverlay/StartCard"]
+layout_mode = 0
+offset_left = 16.0
+offset_top = 92.0
+offset_right = 284.0
+offset_bottom = 132.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 16
+text = "按 WASD 或方向键开始"
+horizontal_alignment = 1
+
+[node name="CelebrationOverlay" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="CelebrationCard" type="Panel" parent="CelebrationOverlay"]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 75.0
+offset_right = 490.0
+offset_bottom = 285.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="FoundLabel" type="Label" parent="CelebrationOverlay/CelebrationCard"]
+layout_mode = 0
+offset_left = 25.0
+offset_top = 28.0
+offset_right = 315.0
+offset_bottom = 78.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.82, 0.36, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 28
+text = "找到宝藏！"
+horizontal_alignment = 1
+
+[node name="RewardLabel" type="Label" parent="CelebrationOverlay/CelebrationCard"]
+layout_mode = 0
+offset_left = 25.0
+offset_top = 95.0
+offset_right = 315.0
+offset_bottom = 138.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 18
+text = "请领取奖品"
+horizontal_alignment = 1
+
+[node name="GoldParticles" type="GPUParticles2D" parent="CelebrationOverlay"]
+position = Vector2(320, 180)
+amount = 18
+lifetime = 1.5
+preprocess = 0.5
+visibility_rect = Rect2(-320, -180, 640, 360)
+process_material = SubResource("ParticleProcessMaterial_gold")
+texture = SubResource("AtlasTexture_particle")
+emitting = true
+
+[node name="ParticleSpark0" type="TextureRect" parent="CelebrationOverlay"]
+layout_mode = 0
+offset_left = 118.0
+offset_top = 116.0
+offset_right = 150.0
+offset_bottom = 148.0
+mouse_filter = 2
+texture_filter = 1
+texture = SubResource("AtlasTexture_particle")
+expand_mode = 1
+
+[node name="ParticleSpark1" type="TextureRect" parent="CelebrationOverlay"]
+layout_mode = 0
+offset_left = 476.0
+offset_top = 126.0
+offset_right = 508.0
+offset_bottom = 158.0
+mouse_filter = 2
+texture_filter = 1
+texture = SubResource("AtlasTexture_particle")
+expand_mode = 1
+
+[node name="ParticleSpark2" type="TextureRect" parent="CelebrationOverlay"]
+layout_mode = 0
+offset_left = 102.0
+offset_top = 244.0
+offset_right = 134.0
+offset_bottom = 276.0
+mouse_filter = 2
+texture_filter = 1
+texture = SubResource("AtlasTexture_particle")
+expand_mode = 1
+
+[node name="CelebrationTimer" type="Timer" parent="."]
+wait_time = 4.0
+one_shot = true
