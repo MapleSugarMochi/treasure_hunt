@@ -33,8 +33,18 @@ func run(t: SceneTree) -> void:
     t.assert_eq(world.get_treasure_positions().size(), 40, "world exposes all 40 treasure positions")
     t.assert_eq(world.get_player_start(), Layout.to_world(Layout.PLAYER_START_CELL), "world exposes player start")
     t.assert_eq(world.get_world_rect().size, Vector2(1536, 1152), "world rect is 96x72 tiles")
-    for node_name in ["Ground", "Paths", "Details", "Props", "Obstacles"]:
-        t.assert_true(world.get_node_or_null(node_name) != null, "world has node: %s" % node_name)
+    var layer_z := {"Ground": -3, "Paths": -2, "Details": -1}
+    for node_name in ["Ground", "Paths", "Details"]:
+        var layer := world.get_node_or_null(node_name) as TileMapLayer
+        t.assert_true(layer != null, "world has node: %s" % node_name)
+        if layer != null:
+            t.assert_true(layer.show_behind_parent, "layer is behind parent draw: %s" % node_name)
+            t.assert_eq(layer.z_index, layer_z[node_name], "layer z order is stable: %s" % node_name)
+    var props_node := world.get_node_or_null("Props") as Node2D
+    t.assert_true(props_node != null, "world has node: Props")
+    if props_node != null:
+        t.assert_true(props_node.z_index > layer_z["Details"], "props draw above detail layers")
+    t.assert_true(world.get_node_or_null("Obstacles") != null, "world has node: Obstacles")
 
     for index in range(Layout.TREASURE_CELLS.size()):
         t.assert_eq(world.get_treasure_positions()[index], Layout.to_world(Layout.TREASURE_CELLS[index]), "world marker position matches layout")
@@ -70,6 +80,21 @@ func run(t: SceneTree) -> void:
     t.assert_eq(blocked_count, Layout.BLOCKED_RECTS.size(), "building/lake collision count matches layout")
     t.assert_eq(tree_count, Layout.TREE_CELLS.size(), "tree collision count matches layout")
     t.assert_eq(bench_count, Layout.BENCH_CELLS.size(), "bench collision count matches layout")
+    for index in range(Layout.BLOCKED_RECTS.size()):
+        var blocked := Layout.BLOCKED_RECTS[index]
+        var blocked_collision := obstacles.get_node_or_null("BlockedRect%02d" % index) as CollisionShape2D
+        t.assert_true(blocked_collision != null, "blocked collision node exists: %d" % index)
+        if blocked_collision != null:
+            var blocked_shape := blocked_collision.shape as RectangleShape2D
+            t.assert_true(blocked_shape != null, "blocked collision is a rectangle: %d" % index)
+            if blocked_shape != null:
+                var expected_position := Vector2(
+                    (blocked.position.x + blocked.size.x / 2.0) * 16.0,
+                    (blocked.position.y + blocked.size.y / 2.0) * 16.0
+                )
+                var expected_size := Vector2(blocked.size.x * 16.0, blocked.size.y * 16.0)
+                t.assert_eq(blocked_collision.position, expected_position, "blocked collision position matches layout: %d" % index)
+                t.assert_eq(blocked_shape.size, expected_size, "blocked collision size matches layout: %d" % index)
     for index in range(Layout.TREE_CELLS.size()):
         var tree_collision := obstacles.get_node("TreeCollision%02d" % index) as CollisionShape2D
         t.assert_true(tree_collision != null, "tree collision node exists: %d" % index)
