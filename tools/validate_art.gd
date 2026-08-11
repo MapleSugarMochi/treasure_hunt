@@ -9,18 +9,8 @@ const EXPECTED := {
 }
 
 const FONT_PATH := "res://assets/fonts/NotoSansCJKsc-Regular.otf"
-
-# Every opaque pixel in a generated atlas must be one of these source colors.
-# Transparent pixels are intentionally exempt because their RGB bytes are not
-# rendered and may vary between image encoders.
-const APPROVED_RGB := {
-    0x3b302b: true, 0x66574b: true, 0xa8c878: true,
-    0x8eb361: true, 0x6f914d: true, 0xe8cf91: true,
-    0xd2ae6e: true, 0xa6533e: true, 0xe9d3a5: true,
-    0xd87943: true, 0xe2a244: true, 0x527d45: true,
-    0x61a1a5: true, 0x8bc7b6: true, 0xf0bd46: true,
-    0x315f82: true, 0xe8b88e: true,
-}
+const PALETTE_PATH := "res://assets/source/palette.md"
+const EXPECTED_PALETTE_COLORS := 17
 
 # These regions correspond to the cells/silhouettes consumed by the game.
 # Checking each one catches an accidentally blank frame while still allowing
@@ -69,6 +59,9 @@ const KEY_REGIONS := {
 
 func _initialize() -> void:
     var failures := 0
+    var palette_result := _load_palette()
+    failures += palette_result.failures
+    var approved_rgb: Dictionary = palette_result.colors
     for file_name in EXPECTED:
         var path := "res://assets/generated/%s" % file_name
         # Resolve to the filesystem so this validator exercises Image directly,
@@ -82,7 +75,7 @@ func _initialize() -> void:
             push_error("Wrong size for %s: %s" % [path, image.get_size()])
             failures += 1
             continue
-        var pixel_result := _validate_pixels(file_name, image)
+        var pixel_result := _validate_pixels(file_name, image, approved_rgb)
         failures += pixel_result.failures
         failures += _validate_regions(file_name, image)
         print("ART ATLAS %s size=%dx%d opaque=%d colors=%d" % [
@@ -97,7 +90,7 @@ func _initialize() -> void:
     print("ART RESULT failures=%d" % failures)
     quit(1 if failures > 0 else 0)
 
-func _validate_pixels(file_name: String, image: Image) -> Dictionary:
+func _validate_pixels(file_name: String, image: Image, approved_rgb: Dictionary) -> Dictionary:
     var failures := 0
     var opaque := 0
     var colors := {}
@@ -117,10 +110,76 @@ func _validate_pixels(file_name: String, image: Image) -> Dictionary:
             var blue := int(round(clamp(pixel.b, 0.0, 1.0) * 255.0))
             var rgb := (red << 16) | (green << 8) | blue
             colors[rgb] = true
-            if not APPROVED_RGB.has(rgb):
-                push_error("Unapproved color in %s at (%d,%d): #%06x" % [file_name, x, y, rgb])
+            if not approved_rgb.has(rgb):
+                push_error("Disallowed color in %s at (%d,%d): #%06x" % [file_name, x, y, rgb])
                 failures += 1
     return {"failures": failures, "opaque": opaque, "colors": colors.size()}
+
+func _load_palette() -> Dictionary:
+    var failures := 0
+    var approved := {}
+    if not FileAccess.file_exists(PALETTE_PATH):
+        push_error("Missing palette source: %s" % PALETTE_PATH)
+        return {"failures": 1, "colors": approved}
+    var palette_text := FileAccess.get_file_as_string(PALETTE_PATH)
+    if palette_text.is_empty():
+        push_error("Empty palette source: %s" % PALETTE_PATH)
+        return {"failures": 1, "colors": approved}
+    var entry_count := 0
+    var lines := palette_text.split("\n")
+    for line_index in range(lines.size()):
+        var line := lines[line_index].strip_edges()
+        if not line.begins_with("|") or not line.ends_with("|"):
+            continue
+        var cells := line.trim_prefix("|").trim_suffix("|").split("|")
+        if cells.size() != 2:
+            push_error("Malformed palette table row at %s:%d" % [PALETTE_PATH, line_index + 1])
+            failures += 1
+            continue
+        var label := cells[0].strip_edges()
+        var color_text := cells[1].strip_edges()
+        if color_text.to_lower() == "hex":
+            continue
+        var separator := true
+        for cell in cells:
+            if not cell.strip_edges().replace("-", "").is_empty():
+                separator = false
+                break
+        if separator:
+            continue
+        if label.is_empty():
+            push_error("Missing palette label at %s:%d" % [PALETTE_PATH, line_index + 1])
+            failures += 1
+        var rgb := _parse_palette_rgb(color_text)
+        if rgb < 0:
+            push_error("Malformed palette color at %s:%d: %s" % [PALETTE_PATH, line_index + 1, color_text])
+            failures += 1
+            continue
+        entry_count += 1
+        if approved.has(rgb):
+            push_error("Duplicate palette color at %s:%d: %s" % [PALETTE_PATH, line_index + 1, color_text])
+            failures += 1
+        approved[rgb] = true
+    if entry_count != EXPECTED_PALETTE_COLORS:
+        push_error("Palette entry count mismatch in %s: expected %d, got %d" % [PALETTE_PATH, EXPECTED_PALETTE_COLORS, entry_count])
+        failures += 1
+    if approved.size() != EXPECTED_PALETTE_COLORS:
+        push_error("Palette unique color count mismatch in %s: expected %d, got %d" % [PALETTE_PATH, EXPECTED_PALETTE_COLORS, approved.size()])
+        failures += 1
+    return {"failures": failures, "colors": approved}
+
+func _parse_palette_rgb(color_text: String) -> int:
+    if not color_text.begins_with("`#") or not color_text.ends_with("`") or color_text.length() != 9:
+        return -1
+    var hex_digits := color_text.substr(2, 6).to_lower()
+    var rgb := 0
+    const HEX_DIGITS := "0123456789abcdef"
+    for index in range(hex_digits.length()):
+        var digit := HEX_DIGITS.find(hex_digits.substr(index, 1))
+        if digit < 0:
+            return -1
+        rgb = rgb * 16 + digit
+    return rgb
 
 func _validate_regions(file_name: String, image: Image) -> int:
     var failures := 0

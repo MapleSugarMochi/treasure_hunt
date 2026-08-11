@@ -13,13 +13,28 @@ const C := {
 }
 
 func _initialize() -> void:
-    DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(OUT))
-    _terrain().save_png("%s/terrain.png" % OUT)
-    _props().save_png("%s/props.png" % OUT)
-    _player().save_png("%s/player.png" % OUT)
-    _treasure().save_png("%s/treasure.png" % OUT)
-    _ui().save_png("%s/ui.png" % OUT)
-    quit(0)
+    var output_path := ProjectSettings.globalize_path(OUT)
+    var directory_error := DirAccess.make_dir_recursive_absolute(output_path)
+    if directory_error != OK:
+        push_error("Failed to create art output directory %s (error=%d)" % [output_path, directory_error])
+        quit(1)
+        return
+    var failures := 0
+    failures += _save_png(_terrain(), "terrain.png")
+    failures += _save_png(_props(), "props.png")
+    failures += _save_png(_player(), "player.png")
+    failures += _save_png(_treasure(), "treasure.png")
+    failures += _save_png(_ui(), "ui.png")
+    print("ART GENERATION failures=%d" % failures)
+    quit(1 if failures > 0 else 0)
+
+func _save_png(image: Image, file_name: String) -> int:
+    var path := "%s/%s" % [OUT, file_name]
+    var save_error := image.save_png(path)
+    if save_error != OK:
+        push_error("Failed to save art PNG %s (error=%d)" % [ProjectSettings.globalize_path(path), save_error])
+        return 1
+    return 0
 
 func _new_image(size: Vector2i) -> Image:
     var image := Image.create(size.x, size.y, false, Image.FORMAT_RGBA8)
