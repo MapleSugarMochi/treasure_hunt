@@ -1,0 +1,16 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://src/world/world.gd" id="1_world_script"]
+
+[node name="World" type="Node2D"]
+script = ExtResource("1_world_script")
+
+[node name="Ground" type="TileMapLayer" parent="."]
+
+[node name="Paths" type="TileMapLayer" parent="."]
+
+[node name="Details" type="TileMapLayer" parent="."]
+
+[node name="Props" type="Node2D" parent="."]
+
+[node name="Obstacles" type="StaticBody2D" parent="."]
