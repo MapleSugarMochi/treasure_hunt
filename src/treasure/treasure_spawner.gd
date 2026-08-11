@@ -43,6 +43,8 @@ func spawn_next(points: Array[Vector2], player_position: Vector2, minimum_distan
     if index < 0 or treasure_scene == null:
         return null
     if is_instance_valid(current_treasure):
+        current_treasure.monitoring = false
+        current_treasure.set_deferred("monitoring", false)
         current_treasure.queue_free()
     current_treasure = treasure_scene.instantiate() as Area2D
     current_treasure.global_position = points[index]

@@ -1,3 +1,32 @@
-[gd_scene format=3]
+[gd_scene load_steps=9 format=3]
+
+[ext_resource type="Script" path="res://src/main/main.gd" id="1_main_script"]
+[ext_resource type="Script" path="res://src/core/game_flow.gd" id="2_flow_script"]
+[ext_resource type="PackedScene" path="res://src/world/world.tscn" id="3_world_scene"]
+[ext_resource type="Script" path="res://src/treasure/treasure_spawner.gd" id="4_spawner_script"]
+[ext_resource type="PackedScene" path="res://src/treasure/treasure.tscn" id="5_treasure_scene"]
+[ext_resource type="PackedScene" path="res://src/player/player.tscn" id="6_player_scene"]
+[ext_resource type="PackedScene" path="res://src/ui/navigation_hud.tscn" id="7_navigation_hud_scene"]
+[ext_resource type="PackedScene" path="res://src/ui/game_ui.tscn" id="8_game_ui_scene"]
 
 [node name="Main" type="Node"]
+script = ExtResource("1_main_script")
+
+[node name="GameFlow" type="Node" parent="."]
+script = ExtResource("2_flow_script")
+
+[node name="World" parent="." instance=ExtResource("3_world_scene")]
+
+[node name="TreasureSpawner" type="Node2D" parent="."]
+script = ExtResource("4_spawner_script")
+treasure_scene = ExtResource("5_treasure_scene")
+
+[node name="Player" parent="." instance=ExtResource("6_player_scene")]
+z_index = 0
+
+[node name="UI" type="CanvasLayer" parent="."]
+layer = 10
+
+[node name="NavigationHUD" parent="UI" instance=ExtResource("7_navigation_hud_scene")]
+
+[node name="GameUI" parent="UI" instance=ExtResource("8_game_ui_scene")]

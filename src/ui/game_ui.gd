@@ -27,3 +27,10 @@ func play_celebration() -> void:
 func _on_celebration_timeout() -> void:
     celebration_overlay.visible = false
     celebration_finished.emit()
+
+func show_fatal_error(message: String) -> void:
+    celebration_timer.stop()
+    start_overlay.visible = false
+    celebration_overlay.visible = false
+    %FatalErrorLabel.text = message
+    %FatalErrorOverlay.visible = true
