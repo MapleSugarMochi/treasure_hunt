@@ -42,6 +42,7 @@ func show_start() -> void:
     start_overlay.visible = true
     quiz_overlay.visible = false
     celebration_overlay.visible = false
+    fatal_error_overlay.visible = false
 
 func hide_start() -> void:
     start_overlay.visible = false
@@ -108,6 +109,7 @@ func play_celebration() -> void:
     start_overlay.visible = false
     quiz_overlay.visible = false
     celebration_overlay.visible = true
+    fatal_error_overlay.visible = false
     celebration_timer.start()
 
 func _on_celebration_timeout() -> void:
@@ -158,6 +160,9 @@ func _is_valid_question(question: Dictionary) -> bool:
         return false
     if not question.has("options") or not question.options is Array or question.options.size() != 4:
         return false
+    for option in question.options:
+        if not option is String or option.is_empty():
+            return false
     if not question.has("correct_index") or not question.correct_index is int:
         return false
     return question.correct_index >= 0 and question.correct_index < question.options.size()

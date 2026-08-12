@@ -101,6 +101,23 @@ func run(t: SceneTree) -> void:
     t.assert_eq(failed_events, 1, "failure timeout emits once")
     ui.call("_on_failure_timeout")
     t.assert_eq(failed_events, 1, "duplicate failure timeout is ignored")
+
+    ui.show_fatal_error("测试致命错误")
+    ui.show_start()
+    t.assert_true(ui.get_node("StartOverlay").visible, "show_start restores only the start overlay")
+    t.assert_true(not ui.get_node("FatalErrorOverlay").visible, "show_start hides a previous fatal overlay")
+    ui.show_fatal_error("测试致命错误")
+    ui.play_celebration()
+    t.assert_true(ui.get_node("CelebrationOverlay").visible, "play_celebration restores only the reward overlay")
+    t.assert_true(not ui.get_node("FatalErrorOverlay").visible, "play_celebration hides a previous fatal overlay")
+
+    ui.show_quiz({
+        "prompt": "无效题目",
+        "options": ["有效选项", "", "有效选项", "有效选项"],
+        "correct_index": 0,
+    })
+    t.assert_true(ui.get_node("FatalErrorOverlay").visible, "empty option shows the fatal error overlay")
+    t.assert_true(not quiz_overlay.visible, "invalid options never open the quiz")
     ui.free()
 
 func _record_correct() -> void:
