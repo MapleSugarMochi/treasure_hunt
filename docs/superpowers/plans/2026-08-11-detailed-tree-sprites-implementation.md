@@ -1,5 +1,7 @@
 # Detailed Tree Sprites Implementation Plan
 
+> Superseded by `2026-08-12-faithful-tree-sprites-implementation.md`. Retained as historical implementation context only.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Replace the two flat map trees with faithful 64-by-96 pixel-art adaptations of the approved orange six-cluster tree and gold four-cluster asymmetric tree shown in the user-provided reference image.

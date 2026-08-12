@@ -2,8 +2,18 @@ extends RefCounted
 
 const PROPS_PATH := "res://assets/generated/props.png"
 const TREE_REGIONS := [Rect2i(96, 0, 64, 96), Rect2i(160, 0, 64, 96)]
-const MAX_ART_BOUNDS := [Vector2i(61, 84), Vector2i(58, 83)]
+const TREE_SOURCE_PATHS := [
+    "res://assets/source/trees/orange-tree-reference.png",
+    "res://assets/source/trees/gold-tree-reference.png",
+]
+const EXPECTED_SOURCE_SHA256 := [
+    "f578cb18654ba2c14c7d663167ef7467c30f53f2c3e57f259278782a6f42627b",
+    "86c066a49c42777c3decba9381ad8c5c7c30a9808a65c23deda831a5b83bc0aa",
+]
+const MAX_ART_BOUNDS := [Vector2i(62, 87), Vector2i(62, 87)]
 const MIN_LOWER_CANOPY_WIDTH := [30, 24]
+const MIN_DISTINCT_COLORS := [10, 10]
+const MIN_OPAQUE_COLOR_EDGES := [2200, 2000]
 const REQUIRED_COLORS := [
     [Color("3b302b"), Color("a6533e"), Color("d87943"), Color("e2a244"), Color("527d45")],
     [Color("3b302b"), Color("a6533e"), Color("e2a244"), Color("d87943"), Color("527d45")],
@@ -26,6 +36,54 @@ func run(t: SceneTree) -> void:
             _opaque_row_count(image, rect, 58) >= MIN_LOWER_CANOPY_WIDTH[index],
             "tree canopy stays full above the trunk: %d" % index
         )
+        t.assert_true(
+            _distinct_opaque_colors(image, rect) >= MIN_DISTINCT_COLORS[index],
+            "tree preserves the reference shading range: %d" % index
+        )
+        t.assert_true(
+            _opaque_color_edges(image, rect) >= MIN_OPAQUE_COLOR_EDGES[index],
+            "tree preserves dense reference pixel texture: %d" % index
+        )
+        var source_path: String = TREE_SOURCE_PATHS[index]
+        var source_exists := FileAccess.file_exists(source_path)
+        t.assert_true(source_exists, "tree source sprite exists: %d" % index)
+        if source_exists:
+            t.assert_eq(
+                FileAccess.get_sha256(source_path),
+                EXPECTED_SOURCE_SHA256[index].to_lower(),
+                "tree source sprite remains the approved reference extraction: %d" % index
+            )
+            var source := Image.load_from_file(ProjectSettings.globalize_path(source_path))
+            t.assert_true(source != null and not source.is_empty(), "tree source sprite loads: %d" % index)
+            if source != null and not source.is_empty():
+                t.assert_eq(source.get_size(), rect.size, "tree source sprite keeps the runtime size: %d" % index)
+                t.assert_true(_region_matches_source(image, rect, source), "tree atlas preserves the approved source pixels: %d" % index)
+        var upper_highlights := _color_count_in_local_rect(
+            image,
+            rect,
+            Rect2i(0, 0, 64, 48),
+            [Color("f0bd46"), Color("e2a244")]
+        )
+        var lower_highlights := _color_count_in_local_rect(
+            image,
+            rect,
+            Rect2i(0, 48, 64, 48),
+            [Color("f0bd46"), Color("e2a244")]
+        )
+        t.assert_true(upper_highlights > lower_highlights * 2, "tree highlights stay concentrated above: %d" % index)
+        var upper_shadows := _color_count_in_local_rect(
+            image,
+            rect,
+            Rect2i(0, 0, 64, 48),
+            [Color("3b302b"), Color("66574b"), Color("a6533e")]
+        )
+        var lower_shadows := _color_count_in_local_rect(
+            image,
+            rect,
+            Rect2i(0, 48, 64, 48),
+            [Color("3b302b"), Color("66574b"), Color("a6533e")]
+        )
+        t.assert_true(lower_shadows > upper_shadows, "tree shadows and trunk weight stay concentrated below: %d" % index)
         for color in REQUIRED_COLORS[index]:
             t.assert_true(
                 _color_count(image, rect, color) >= 8,
@@ -95,3 +153,55 @@ func _alpha_mask_difference(image: Image, first: Rect2i, second: Rect2i) -> int:
             if first_opaque != second_opaque:
                 difference += 1
     return difference
+
+func _distinct_opaque_colors(image: Image, rect: Rect2i) -> int:
+    var colors := {}
+    for y in range(rect.position.y, rect.end.y):
+        for x in range(rect.position.x, rect.end.x):
+            var pixel := image.get_pixel(x, y)
+            if pixel.a > 0.0:
+                colors[pixel.to_rgba32()] = true
+    return colors.size()
+
+func _opaque_color_edges(image: Image, rect: Rect2i) -> int:
+    var edges := 0
+    for local_y in range(rect.size.y):
+        for local_x in range(rect.size.x):
+            var point := rect.position + Vector2i(local_x, local_y)
+            var pixel := image.get_pixelv(point)
+            if pixel.a <= 0.0:
+                continue
+            if local_x > 0:
+                var left := image.get_pixelv(point + Vector2i.LEFT)
+                if left.a > 0.0 and left.to_rgba32() != pixel.to_rgba32():
+                    edges += 1
+            if local_y > 0:
+                var above := image.get_pixelv(point + Vector2i.UP)
+                if above.a > 0.0 and above.to_rgba32() != pixel.to_rgba32():
+                    edges += 1
+    return edges
+
+func _region_matches_source(atlas: Image, rect: Rect2i, source: Image) -> bool:
+    for local_y in range(rect.size.y):
+        for local_x in range(rect.size.x):
+            var offset := Vector2i(local_x, local_y)
+            if atlas.get_pixelv(rect.position + offset).to_rgba32() != source.get_pixelv(offset).to_rgba32():
+                return false
+    return true
+
+func _color_count_in_local_rect(
+    image: Image,
+    region: Rect2i,
+    local_rect: Rect2i,
+    colors: Array[Color]
+) -> int:
+    var targets := {}
+    for color in colors:
+        targets[color.to_rgba32()] = true
+    var count := 0
+    for local_y in range(local_rect.position.y, local_rect.end.y):
+        for local_x in range(local_rect.position.x, local_rect.end.x):
+            var pixel := image.get_pixelv(region.position + Vector2i(local_x, local_y))
+            if pixel.a > 0.0 and targets.has(pixel.to_rgba32()):
+                count += 1
+    return count

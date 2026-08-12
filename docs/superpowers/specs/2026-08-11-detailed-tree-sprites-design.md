@@ -1,7 +1,7 @@
 # Detailed Tree Sprites Design
 
 Date: 2026-08-11
-Status: Implemented and verified
+Status: Superseded by `2026-08-12-faithful-tree-sprites-design.md`
 
 ## Objective
 
