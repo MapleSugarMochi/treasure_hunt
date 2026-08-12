@@ -142,7 +142,7 @@ func _assert_game_ui_contract(t: SceneTree, ui: Node) -> void:
     t.assert_eq(title.text, "校园寻宝", "start title uses the required text")
     t.assert_eq(hint.text, "按 WASD 或方向键开始", "start hint uses the required text")
     t.assert_eq(found.text, "找到宝藏！", "celebration title uses the required text")
-    t.assert_eq(reward.text, "请领取奖品", "celebration reward uses the required text")
+    t.assert_eq(reward.text, "回答正确，请领取奖品", "celebration reward requires a correct answer")
     for label in [title, hint, found, reward]:
         var font := label.get_theme_font("font") as FontFile
         t.assert_true(font != null, "Chinese labels use a bundled font")

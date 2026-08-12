@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://src/ui/game_ui.gd" id="1_game_ui_script"]
 [ext_resource type="Texture2D" path="res://assets/generated/ui.png" id="2_ui_texture"]
@@ -19,6 +19,54 @@ corner_radius_top_left = 12
 corner_radius_top_right = 12
 corner_radius_bottom_right = 12
 corner_radius_bottom_left = 12
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_answer_normal"]
+bg_color = Color(0.11, 0.17, 0.25, 0.98)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.35, 0.45, 0.58, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_answer_hover"]
+bg_color = Color(0.2, 0.25, 0.28, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.95, 0.73, 0.25, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_answer_pressed"]
+bg_color = Color(0.28, 0.25, 0.17, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(1, 0.82, 0.36, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_answer_disabled"]
+bg_color = Color(0.32, 0.38, 0.45, 1)
+border_width_left = 2
+border_width_top = 2
+border_width_right = 2
+border_width_bottom = 2
+border_color = Color(0.45, 0.52, 0.6, 1)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_right = 6
+corner_radius_bottom_left = 6
 
 [sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_gold"]
 direction = Vector3(0, -1, 0)
@@ -84,6 +132,168 @@ theme_override_font_sizes/font_size = 16
 text = "按 WASD 或方向键开始"
 horizontal_alignment = 1
 
+[node name="QuizOverlay" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+
+[node name="Backdrop" type="ColorRect" parent="QuizOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 0
+color = Color(0.015, 0.025, 0.045, 0.78)
+
+[node name="QuizCard" type="Panel" parent="QuizOverlay"]
+layout_mode = 0
+offset_left = 58.0
+offset_top = 8.0
+offset_right = 582.0
+offset_bottom = 352.0
+mouse_filter = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="QuizTitle" type="Label" parent="QuizOverlay/QuizCard"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 9.0
+offset_right = 504.0
+offset_bottom = 38.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.82, 0.36, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 21
+text = "AI 挑战"
+horizontal_alignment = 1
+
+[node name="QuestionLabel" type="Label" parent="QuizOverlay/QuizCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 20.0
+offset_top = 40.0
+offset_right = 504.0
+offset_bottom = 94.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 16
+text = "题目"
+horizontal_alignment = 1
+vertical_alignment = 1
+autowrap_mode = 3
+
+[node name="AnswerA" type="Button" parent="QuizOverlay/QuizCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 20.0
+offset_top = 99.0
+offset_right = 504.0
+offset_bottom = 138.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 0.9, 0.58, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.9, 0.58, 1)
+theme_override_colors/font_disabled_color = Color(0.85, 0.88, 0.92, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_answer_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_answer_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_answer_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_answer_disabled")
+text = "A. 选项"
+alignment = 0
+
+[node name="AnswerB" type="Button" parent="QuizOverlay/QuizCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 20.0
+offset_top = 144.0
+offset_right = 504.0
+offset_bottom = 183.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 0.9, 0.58, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.9, 0.58, 1)
+theme_override_colors/font_disabled_color = Color(0.85, 0.88, 0.92, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_answer_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_answer_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_answer_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_answer_disabled")
+text = "B. 选项"
+alignment = 0
+
+[node name="AnswerC" type="Button" parent="QuizOverlay/QuizCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 20.0
+offset_top = 189.0
+offset_right = 504.0
+offset_bottom = 228.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 0.9, 0.58, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.9, 0.58, 1)
+theme_override_colors/font_disabled_color = Color(0.85, 0.88, 0.92, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_answer_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_answer_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_answer_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_answer_disabled")
+text = "C. 选项"
+alignment = 0
+
+[node name="AnswerD" type="Button" parent="QuizOverlay/QuizCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 20.0
+offset_top = 234.0
+offset_right = 504.0
+offset_bottom = 273.0
+focus_mode = 0
+mouse_default_cursor_shape = 2
+theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
+theme_override_colors/font_hover_color = Color(1, 0.9, 0.58, 1)
+theme_override_colors/font_pressed_color = Color(1, 0.9, 0.58, 1)
+theme_override_colors/font_disabled_color = Color(0.85, 0.88, 0.92, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 14
+theme_override_styles/normal = SubResource("StyleBoxFlat_answer_normal")
+theme_override_styles/hover = SubResource("StyleBoxFlat_answer_hover")
+theme_override_styles/pressed = SubResource("StyleBoxFlat_answer_pressed")
+theme_override_styles/disabled = SubResource("StyleBoxFlat_answer_disabled")
+text = "D. 选项"
+alignment = 0
+
+[node name="FeedbackLabel" type="Label" parent="QuizOverlay/QuizCard"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 20.0
+offset_top = 283.0
+offset_right = 504.0
+offset_bottom = 326.0
+mouse_filter = 2
+theme_override_colors/font_color = Color(0.86, 0.91, 0.96, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 15
+text = "请选择一个答案（共 2 次机会）"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="CelebrationOverlay" type="Control" parent="."]
 unique_name_in_owner = true
 visible = false
@@ -127,7 +337,7 @@ mouse_filter = 2
 theme_override_colors/font_color = Color(0.95, 0.97, 1, 1)
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 18
-text = "请领取奖品"
+text = "回答正确，请领取奖品"
 horizontal_alignment = 1
 
 [node name="GoldParticles" type="GPUParticles2D" parent="CelebrationOverlay"]
@@ -217,4 +427,8 @@ vertical_alignment = 1
 
 [node name="CelebrationTimer" type="Timer" parent="."]
 wait_time = 4.0
+one_shot = true
+
+[node name="FailureTimer" type="Timer" parent="."]
+wait_time = 2.0
 one_shot = true
