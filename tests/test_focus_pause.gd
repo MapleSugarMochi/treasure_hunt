@@ -32,6 +32,7 @@ func run(t: SceneTree) -> void:
     for item in expected_roots:
         paused_nodes.append(main.get_node(item[0]))
     paused_nodes.append(main.get_node("UI/GameUI/CelebrationTimer"))
+    paused_nodes.append(main.get_node("UI/GameUI/FailureTimer"))
 
     if main.has_method("set_window_focused_for_test"):
         main.set_window_focused_for_test(false)
