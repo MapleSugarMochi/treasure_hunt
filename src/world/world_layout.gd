@@ -6,21 +6,18 @@ const HEIGHT := 72
 const TILE_SIZE := 16
 const PLAYER_START_CELL := Vector2i(48, 36)
 
-# A3 layout: a compact square teaching building faces the wider north-east
-# building across the garden ring. The south-east building was removed.
+# The two teaching buildings frame the north side of the ring road.
 const BUILDING_RECTS: Array[Rect2i] = [
     Rect2i(7, 3, 15, 15),
     Rect2i(66, 4, 26, 11),
 ]
 
-const PLAZA_RECT := Rect2i(38, 28, 20, 16)
-const GARDEN_RECT := Rect2i(70, 57, 22, 13)
-const GARDEN_BED_RECTS: Array[Rect2i] = [
-    Rect2i(72, 58, 7, 3),
-    Rect2i(83, 58, 7, 3),
-    Rect2i(72, 65, 7, 3),
-    Rect2i(83, 65, 7, 3),
-]
+const PLAZA_CENTER := Vector2i(48, 36)
+const PLAZA_RADIUS := 8
+const PLAZA_BOUNDS := Rect2i(
+    PLAZA_CENTER - Vector2i(PLAZA_RADIUS, PLAZA_RADIUS),
+    Vector2i(PLAZA_RADIUS * 2 + 1, PLAZA_RADIUS * 2 + 1)
+)
 
 # Tile-space shoreline vertices. Cell centres inside the polygon are water.
 const LAKE_POLYGON: Array[Vector2] = [
@@ -30,24 +27,20 @@ const LAKE_POLYGON: Array[Vector2] = [
 ]
 
 const TREE_CELLS: Array[Vector2i] = [
-    Vector2i(34, 8), Vector2i(61, 10), Vector2i(8, 22),
-    Vector2i(29, 20), Vector2i(64, 22), Vector2i(89, 21),
-    Vector2i(33, 49), Vector2i(61, 50), Vector2i(93, 47),
-    Vector2i(39, 62), Vector2i(52, 63), Vector2i(66, 60),
-    Vector2i(31, 58),
+    Vector2i(43, 6), Vector2i(35, 12), Vector2i(55, 12),
+    Vector2i(4, 24), Vector2i(4, 33),
+    Vector2i(91, 24), Vector2i(91, 51),
+    Vector2i(30, 61), Vector2i(25, 67), Vector2i(34, 67),
+    Vector2i(52, 67), Vector2i(64, 61), Vector2i(66, 67),
 ]
 
-# Flowers are decorative and walkable. The final twelve cells form four
-# planted beds in the south-east garden; the bed rectangles provide collision.
+# Flowers are decorative and walkable. They sit only on the four grass pockets
+# inside the ring road, leaving every path and the central plaza clear.
 const FLOWER_CELLS: Array[Vector2i] = [
-    Vector2i(13, 24), Vector2i(22, 29), Vector2i(35, 20),
-    Vector2i(58, 20), Vector2i(73, 30), Vector2i(83, 43),
-    Vector2i(32, 53), Vector2i(43, 57), Vector2i(57, 58),
-    Vector2i(67, 51), Vector2i(93, 29), Vector2i(4, 24),
-    Vector2i(73, 59), Vector2i(75, 59), Vector2i(77, 59),
-    Vector2i(84, 59), Vector2i(86, 59), Vector2i(88, 59),
-    Vector2i(73, 66), Vector2i(75, 66), Vector2i(77, 66),
-    Vector2i(84, 66), Vector2i(86, 66), Vector2i(88, 66),
+    Vector2i(22, 29), Vector2i(30, 29), Vector2i(37, 25),
+    Vector2i(58, 26), Vector2i(67, 28), Vector2i(73, 30),
+    Vector2i(83, 43), Vector2i(72, 46), Vector2i(67, 51),
+    Vector2i(40, 50), Vector2i(26, 42), Vector2i(20, 40),
 ]
 
 const TREASURE_CELLS: Array[Vector2i] = [
@@ -72,12 +65,22 @@ static func is_lake_cell(cell: Vector2i) -> bool:
         PackedVector2Array(LAKE_POLYGON)
     )
 
+static func lake_cells() -> Array[Vector2i]:
+    var result: Array[Vector2i] = []
+    for y in range(HEIGHT):
+        for x in range(WIDTH):
+            var cell := Vector2i(x, y)
+            if is_lake_cell(cell):
+                result.append(cell)
+    return result
+
+static func is_plaza_cell(cell: Vector2i) -> bool:
+    var offset := cell - PLAZA_CENTER
+    return offset.x * offset.x + offset.y * offset.y <= PLAZA_RADIUS * PLAZA_RADIUS
+
 static func is_structural_blocked(cell: Vector2i) -> bool:
     for building in BUILDING_RECTS:
         if building.has_point(cell):
-            return true
-    for bed in GARDEN_BED_RECTS:
-        if bed.has_point(cell):
             return true
     return is_lake_cell(cell)
 
@@ -98,12 +101,6 @@ static func has_clearance(cell: Vector2i, radius: int) -> bool:
 
 static func to_world(cell: Vector2i) -> Vector2:
     return Vector2(cell.x * TILE_SIZE + TILE_SIZE / 2, cell.y * TILE_SIZE + TILE_SIZE / 2)
-
-static func polygon_to_world(points: Array[Vector2]) -> PackedVector2Array:
-    var result := PackedVector2Array()
-    for point in points:
-        result.append(point * TILE_SIZE)
-    return result
 
 static func treasure_world_positions() -> Array[Vector2]:
     var result: Array[Vector2] = []

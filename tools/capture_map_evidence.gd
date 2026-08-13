@@ -43,6 +43,10 @@ func _capture_all() -> void:
 func _save_viewport(viewport: SubViewport, file_name: String) -> void:
     await RenderingServer.frame_post_draw
     var image := viewport.get_texture().get_image()
+    if image == null:
+        failures += 1
+        push_error("Cannot read rendered viewport for %s" % file_name)
+        return
     if image.get_size() != viewport.size:
         failures += 1
         push_error("Unexpected capture size for %s: %s" % [file_name, image.get_size()])

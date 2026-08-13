@@ -9,13 +9,18 @@ func run(t: SceneTree) -> void:
     t.assert_eq(Layout.TREASURE_CELLS.size(), 40, "exactly 40 candidate points")
     t.assert_eq(Layout.BUILDING_RECTS.size(), 2, "A3 has two teaching buildings")
     t.assert_eq(Layout.BUILDING_RECTS[0].size.x, Layout.BUILDING_RECTS[0].size.y, "teaching building A is square")
-    t.assert_eq(Layout.GARDEN_BED_RECTS.size(), 4, "south-east garden has four planted beds")
+    t.assert_true(Layout.is_plaza_cell(Layout.PLAZA_CENTER), "plaza contains its center")
+    t.assert_true(Layout.is_plaza_cell(Layout.PLAZA_CENTER + Vector2i(Layout.PLAZA_RADIUS, 0)), "plaza reaches its east radius")
+    t.assert_true(Layout.is_plaza_cell(Layout.PLAZA_CENTER + Vector2i(0, Layout.PLAZA_RADIUS)), "plaza reaches its south radius")
+    t.assert_true(
+        not Layout.is_plaza_cell(Layout.PLAZA_CENTER + Vector2i(Layout.PLAZA_RADIUS, Layout.PLAZA_RADIUS)),
+        "plaza excludes square corners"
+    )
     t.assert_true(Layout.LAKE_POLYGON.size() > 4, "lake uses an irregular shoreline polygon")
     t.assert_true(Layout.is_lake_cell(Vector2i(15, 55)), "lake interior is detected")
     t.assert_true(not Layout.is_lake_cell(Vector2i(4, 47)), "lake bounding corner remains land")
-    t.assert_true(Layout.is_walkable(Vector2i(81, 63)), "garden cross-path is walkable")
-    for bed in Layout.GARDEN_BED_RECTS:
-        t.assert_true(not Layout.is_walkable(bed.position + bed.size / 2), "garden bed is blocked")
+    t.assert_true(Layout.lake_cells().size() > 0, "lake exposes its occupied water tiles")
+    t.assert_true(Layout.is_walkable(Vector2i(81, 63)), "former garden area is walkable grass")
     t.assert_true(Layout.is_walkable(Layout.PLAYER_START_CELL), "player start is walkable")
     for cell in Layout.TREASURE_CELLS:
         t.assert_true(Layout.in_bounds(cell), "candidate is in bounds: %s" % cell)
@@ -50,7 +55,17 @@ func run(t: SceneTree) -> void:
     var path_layer := world.get_node("Paths") as TileMapLayer
     var detail_layer := world.get_node("Details") as TileMapLayer
     t.assert_true(path_layer.get_cell_source_id(Vector2i(48, 19)) >= 0, "north ring is painted")
-    t.assert_true(path_layer.get_cell_source_id(Vector2i(81, 63)) >= 0, "garden cross-path is painted")
+    t.assert_eq(path_layer.get_cell_source_id(Vector2i(81, 63)), -1, "former garden cross-path is removed")
+    t.assert_true(path_layer.get_cell_source_id(Layout.PLAZA_CENTER) >= 0, "round plaza center is painted")
+    t.assert_true(
+        path_layer.get_cell_source_id(Layout.PLAZA_CENTER + Vector2i(Layout.PLAZA_RADIUS, 0)) >= 0,
+        "round plaza reaches its horizontal radius"
+    )
+    t.assert_eq(
+        path_layer.get_cell_source_id(Layout.PLAZA_CENTER + Vector2i(Layout.PLAZA_RADIUS, Layout.PLAZA_RADIUS)),
+        -1,
+        "round plaza leaves its bounding-box corner as grass"
+    )
     t.assert_true(detail_layer.get_cell_source_id(Vector2i(15, 55)) >= 0, "lake interior is painted")
     t.assert_eq(detail_layer.get_cell_source_id(Vector2i(4, 47)), -1, "irregular lake corner remains unpainted")
     var props_node := world.get_node_or_null("Props") as Node2D
@@ -96,18 +111,16 @@ func run(t: SceneTree) -> void:
     t.assert_eq(boundary_count, 4, "world has four edge boundaries")
 
     var building_count := 0
-    var garden_bed_count := 0
     var tree_count := 0
     for child in obstacles.get_children():
         t.assert_true(not child.name.begins_with("BenchCollision"), "world has no bench collision")
         if child.name.begins_with("BuildingRect"):
             building_count += 1
-        elif child.name.begins_with("GardenBedRect"):
-            garden_bed_count += 1
         elif child.name.begins_with("TreeCollision"):
             tree_count += 1
     t.assert_eq(building_count, Layout.BUILDING_RECTS.size(), "building collision count matches layout")
-    t.assert_eq(garden_bed_count, Layout.GARDEN_BED_RECTS.size(), "garden-bed collision count matches layout")
+    for child in obstacles.get_children():
+        t.assert_true(not child.name.begins_with("GardenBedRect"), "removed garden has no collision")
     t.assert_eq(tree_count, Layout.TREE_CELLS.size(), "tree collision count matches layout")
     for index in range(Layout.BUILDING_RECTS.size()):
         var blocked := Layout.BUILDING_RECTS[index]
@@ -124,20 +137,23 @@ func run(t: SceneTree) -> void:
                 var expected_size := Vector2(blocked.size.x * 16.0, blocked.size.y * 16.0)
                 t.assert_eq(blocked_collision.position, expected_position, "building collision position matches layout: %d" % index)
                 t.assert_eq(blocked_shape.size, expected_size, "building collision size matches layout: %d" % index)
-    for index in range(Layout.GARDEN_BED_RECTS.size()):
-        var bed := Layout.GARDEN_BED_RECTS[index]
-        var bed_collision := obstacles.get_node_or_null("GardenBedRect%02d" % index) as CollisionShape2D
-        t.assert_true(bed_collision != null, "garden-bed collision node exists: %d" % index)
-        if bed_collision != null:
-            t.assert_eq(
-                (bed_collision.shape as RectangleShape2D).size,
-                Vector2(bed.size.x * 16.0, bed.size.y * 16.0),
-                "garden-bed collision size matches layout: %d" % index
-            )
-    var lake_collision := obstacles.get_node_or_null("LakeCollision") as CollisionPolygon2D
-    t.assert_true(lake_collision != null, "irregular lake has polygon collision")
-    if lake_collision != null:
-        t.assert_eq(lake_collision.polygon, Layout.polygon_to_world(Layout.LAKE_POLYGON), "lake collision follows shoreline")
+    var lake_cells := Layout.lake_cells()
+    var lake_collision_count := 0
+    for child in obstacles.get_children():
+        if child.name.begins_with("LakeTileCollision"):
+            lake_collision_count += 1
+    t.assert_eq(lake_collision_count, lake_cells.size(), "every water tile has one collision")
+    for cell in lake_cells:
+        var collision_name := "LakeTileCollision_%02d_%02d" % [cell.x, cell.y]
+        var lake_collision := obstacles.get_node_or_null(collision_name) as CollisionShape2D
+        t.assert_true(lake_collision != null, "water tile collision exists: %s" % cell)
+        if lake_collision != null:
+            t.assert_eq(lake_collision.position, Layout.to_world(cell), "water collision matches rendered tile: %s" % cell)
+            t.assert_eq((lake_collision.shape as RectangleShape2D).size, Vector2(16, 16), "water collision is exactly one tile: %s" % cell)
+    t.assert_true(
+        obstacles.get_node_or_null("LakeTileCollision_04_47") == null,
+        "land outside the irregular shoreline has no lake collision"
+    )
     for index in range(Layout.TREE_CELLS.size()):
         var tree_collision := obstacles.get_node("TreeCollision%02d" % index) as CollisionShape2D
         t.assert_true(tree_collision != null, "tree collision node exists: %d" % index)
@@ -146,6 +162,13 @@ func run(t: SceneTree) -> void:
             t.assert_eq((tree_collision.shape as RectangleShape2D).size, Vector2(16, 16), "tree collision footprint is one tile")
     var flowers := world.get_node("Props/Flowers")
     t.assert_eq(flowers.get_child_count(), Layout.FLOWER_CELLS.size(), "world renders every flower cell")
+    for flower_cell in Layout.FLOWER_CELLS:
+        t.assert_eq(path_layer.get_cell_source_id(flower_cell), -1, "flower is planted on grass: %s" % flower_cell)
+        t.assert_true(not Layout.is_plaza_cell(flower_cell), "flower stays outside the round plaza: %s" % flower_cell)
+        t.assert_true(flower_cell not in Layout.TREE_CELLS, "flower does not overlap a tree: %s" % flower_cell)
+        t.assert_true(flower_cell not in Layout.TREASURE_CELLS, "flower does not overlap treasure: %s" % flower_cell)
+        t.assert_true(flower_cell.x > 10 and flower_cell.x < 88, "flower stays inside the ring horizontally: %s" % flower_cell)
+        t.assert_true(flower_cell.y > 21 and flower_cell.y < 52, "flower stays inside the ring vertically: %s" % flower_cell)
     for flower in flowers.get_children():
         t.assert_true(flower.name.begins_with("Flower"), "flower node has stable name")
         t.assert_true(flower.get_child_count() >= 3, "flower has stem, petals, and center")

@@ -162,7 +162,6 @@ def main():
     lake_box = cell_rect(origin, scale, LAKE)
     lake_polygon = [p(origin, scale, point) for point in LAKE_POINTS]
     draw.polygon(lake_polygon, fill=C["water"])
-    draw.line(lake_polygon + [lake_polygon[0]], fill=C["outline"], width=5, joint="curve")
     draw.line([p(origin, scale, (8, 54)), p(origin, scale, (15, 52)), p(origin, scale, (23, 54))],
               fill=C["water2"], width=5, joint="curve")
     draw.line([p(origin, scale, (7, 59)), p(origin, scale, (14, 58)), p(origin, scale, (24, 60))],
