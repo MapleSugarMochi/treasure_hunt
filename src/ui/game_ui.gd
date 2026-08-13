@@ -7,7 +7,6 @@ signal quiz_answered_incorrectly
 signal quiz_failed
 signal restart_requested
 
-const ANSWER_PREFIXES := ["A", "B", "C", "D"]
 const DEFAULT_DISABLED_COLOR := Color("526174")
 const WRONG_COLOR := Color("9e3945")
 const CORRECT_COLOR := Color("2f7d55")
@@ -73,7 +72,7 @@ func show_quiz(question: Dictionary) -> void:
     feedback_label.add_theme_color_override("font_color", Color("dbe8f5"))
     for index in range(answer_buttons.size()):
         var button := answer_buttons[index]
-        button.text = "%s. %s" % [ANSWER_PREFIXES[index], current_question.options[index]]
+        button.text = current_question.options[index]
         button.disabled = false
         _set_disabled_style(button, DEFAULT_DISABLED_COLOR, DEFAULT_BORDER_COLOR)
     start_overlay.visible = false
@@ -182,10 +181,14 @@ func _set_disabled_style(button: Button, background: Color, border: Color) -> vo
     style.border_width_top = 2
     style.border_width_right = 2
     style.border_width_bottom = 2
-    style.corner_radius_top_left = 6
-    style.corner_radius_top_right = 6
-    style.corner_radius_bottom_right = 6
-    style.corner_radius_bottom_left = 6
+    style.corner_radius_top_left = 10
+    style.corner_radius_top_right = 10
+    style.corner_radius_bottom_right = 10
+    style.corner_radius_bottom_left = 10
+    style.content_margin_left = 48.0
+    style.content_margin_right = 12.0
+    style.content_margin_top = 8.0
+    style.content_margin_bottom = 8.0
     button.add_theme_stylebox_override("disabled", style)
     button.add_theme_color_override("font_disabled_color", Color("ffffff"))
 
