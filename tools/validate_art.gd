@@ -18,7 +18,9 @@ const EXPECTED_PALETTE_COLORS := 17
 const PROP_RUNTIME_REGIONS := [
     {"label": "orange_tree", "rect": Rect2i(96, 0, 64, 96), "transparent_border": true},
     {"label": "gold_tree", "rect": Rect2i(160, 0, 64, 96), "transparent_border": true},
-    {"label": "bench", "rect": Rect2i(208, 96, 48, 32), "transparent_border": false},
+]
+const REMOVED_PROP_REGIONS := [
+    {"label": "removed_bench", "rect": Rect2i(208, 96, 48, 32)},
 ]
 
 # These regions correspond to the cells/silhouettes consumed by the game.
@@ -39,7 +41,6 @@ const KEY_REGIONS := {
         {"label": "building", "rect": Rect2i(0, 20, 92, 68)},
         {"label": "orange_tree", "rect": Rect2i(96, 0, 64, 96)},
         {"label": "gold_tree", "rect": Rect2i(160, 0, 64, 96)},
-        {"label": "bench", "rect": Rect2i(208, 96, 48, 32)},
     ],
     "player.png": [
         {"label": "down_idle", "rect": Rect2i(0, 0, 24, 32)},
@@ -287,6 +288,16 @@ func _validate_prop_layout(image: Image) -> int:
         if region.label.ends_with("tree") and colors.size() < 5:
             push_error("Tree region lacks color detail: %s colors=%d" % [region.label, colors.size()])
             failures += 1
+    for removed_region in REMOVED_PROP_REGIONS:
+        var removed_rect: Rect2i = removed_region.rect
+        for y in range(removed_rect.position.y, removed_rect.end.y):
+            for x in range(removed_rect.position.x, removed_rect.end.x):
+                if image.get_pixel(x, y).a > 0.0:
+                    push_error("Removed prop region is not empty: %s" % removed_region.label)
+                    failures += 1
+                    break
+            if failures > 0:
+                break
     return failures
 
 func _has_transparent_border(image: Image, rect: Rect2i) -> bool:

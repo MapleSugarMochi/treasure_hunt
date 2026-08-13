@@ -7,6 +7,15 @@ func run(t: SceneTree) -> void:
     t.assert_eq(Layout.WIDTH, 96, "map width is fixed")
     t.assert_eq(Layout.HEIGHT, 72, "map height is fixed")
     t.assert_eq(Layout.TREASURE_CELLS.size(), 40, "exactly 40 candidate points")
+    t.assert_eq(Layout.BUILDING_RECTS.size(), 2, "A3 has two teaching buildings")
+    t.assert_eq(Layout.BUILDING_RECTS[0].size.x, Layout.BUILDING_RECTS[0].size.y, "teaching building A is square")
+    t.assert_eq(Layout.GARDEN_BED_RECTS.size(), 4, "south-east garden has four planted beds")
+    t.assert_true(Layout.LAKE_POLYGON.size() > 4, "lake uses an irregular shoreline polygon")
+    t.assert_true(Layout.is_lake_cell(Vector2i(15, 55)), "lake interior is detected")
+    t.assert_true(not Layout.is_lake_cell(Vector2i(4, 47)), "lake bounding corner remains land")
+    t.assert_true(Layout.is_walkable(Vector2i(81, 63)), "garden cross-path is walkable")
+    for bed in Layout.GARDEN_BED_RECTS:
+        t.assert_true(not Layout.is_walkable(bed.position + bed.size / 2), "garden bed is blocked")
     t.assert_true(Layout.is_walkable(Layout.PLAYER_START_CELL), "player start is walkable")
     for cell in Layout.TREASURE_CELLS:
         t.assert_true(Layout.in_bounds(cell), "candidate is in bounds: %s" % cell)
@@ -18,8 +27,6 @@ func run(t: SceneTree) -> void:
 
     for cell in Layout.TREE_CELLS:
         t.assert_true(not Layout.is_walkable(cell), "tree cell is blocked: %s" % cell)
-    for cell in Layout.BENCH_CELLS:
-        t.assert_true(not Layout.is_walkable(cell), "bench cell is blocked: %s" % cell)
 
     var world_scene := load("res://src/world/world.tscn") as PackedScene
     t.assert_true(world_scene != null, "world scene loads")
@@ -40,19 +47,21 @@ func run(t: SceneTree) -> void:
         if layer != null:
             t.assert_true(layer.show_behind_parent, "layer is behind parent draw: %s" % node_name)
             t.assert_eq(layer.z_index, layer_z[node_name], "layer z order is stable: %s" % node_name)
+    var path_layer := world.get_node("Paths") as TileMapLayer
+    var detail_layer := world.get_node("Details") as TileMapLayer
+    t.assert_true(path_layer.get_cell_source_id(Vector2i(48, 19)) >= 0, "north ring is painted")
+    t.assert_true(path_layer.get_cell_source_id(Vector2i(81, 63)) >= 0, "garden cross-path is painted")
+    t.assert_true(detail_layer.get_cell_source_id(Vector2i(15, 55)) >= 0, "lake interior is painted")
+    t.assert_eq(detail_layer.get_cell_source_id(Vector2i(4, 47)), -1, "irregular lake corner remains unpainted")
     var props_node := world.get_node_or_null("Props") as Node2D
     t.assert_true(props_node != null, "world has node: Props")
     if props_node != null:
         t.assert_true(props_node.z_index > layer_z["Details"], "props draw above detail layers")
+        t.assert_true(props_node.get_node_or_null("Prop100") == null, "world has no bench sprite")
         t.assert_true(
             not CampusWorld.TREE_REGIONS[0].intersects(CampusWorld.TREE_REGIONS[1]),
             "tree atlas regions do not overlap"
         )
-        for tree_region in CampusWorld.TREE_REGIONS:
-            t.assert_true(
-                not tree_region.intersects(CampusWorld.BENCH_REGION),
-                "tree and bench atlas regions do not overlap"
-            )
         for index in range(Layout.TREE_CELLS.size()):
             var tree_sprite := props_node.get_node_or_null("Prop%03d" % index) as Sprite2D
             t.assert_true(tree_sprite != null, "tree sprite exists: %d" % index)
@@ -62,15 +71,6 @@ func run(t: SceneTree) -> void:
                     tree_sprite.region_rect,
                     CampusWorld.TREE_REGIONS[index % CampusWorld.TREE_REGIONS.size()],
                     "tree sprite uses the expected nonoverlapping region: %d" % index
-                )
-        for index in range(Layout.BENCH_CELLS.size()):
-            var bench_sprite := props_node.get_node_or_null("Prop%03d" % (100 + index)) as Sprite2D
-            t.assert_true(bench_sprite != null, "bench sprite exists: %d" % index)
-            if bench_sprite != null:
-                t.assert_eq(
-                    bench_sprite.region_rect,
-                    CampusWorld.BENCH_REGION,
-                    "bench sprite uses the repacked atlas region: %d" % index
                 )
     t.assert_true(world.get_node_or_null("Obstacles") != null, "world has node: Obstacles")
 
@@ -95,47 +95,55 @@ func run(t: SceneTree) -> void:
             t.assert_eq((boundary.shape as RectangleShape2D).size, boundary_specs[boundary_name][1], "boundary size is exact: %s" % boundary_name)
     t.assert_eq(boundary_count, 4, "world has four edge boundaries")
 
-    var blocked_count := 0
+    var building_count := 0
+    var garden_bed_count := 0
     var tree_count := 0
-    var bench_count := 0
     for child in obstacles.get_children():
-        if child.name.begins_with("BlockedRect"):
-            blocked_count += 1
+        t.assert_true(not child.name.begins_with("BenchCollision"), "world has no bench collision")
+        if child.name.begins_with("BuildingRect"):
+            building_count += 1
+        elif child.name.begins_with("GardenBedRect"):
+            garden_bed_count += 1
         elif child.name.begins_with("TreeCollision"):
             tree_count += 1
-        elif child.name.begins_with("BenchCollision"):
-            bench_count += 1
-    t.assert_eq(blocked_count, Layout.BLOCKED_RECTS.size(), "building/lake collision count matches layout")
+    t.assert_eq(building_count, Layout.BUILDING_RECTS.size(), "building collision count matches layout")
+    t.assert_eq(garden_bed_count, Layout.GARDEN_BED_RECTS.size(), "garden-bed collision count matches layout")
     t.assert_eq(tree_count, Layout.TREE_CELLS.size(), "tree collision count matches layout")
-    t.assert_eq(bench_count, Layout.BENCH_CELLS.size(), "bench collision count matches layout")
-    for index in range(Layout.BLOCKED_RECTS.size()):
-        var blocked := Layout.BLOCKED_RECTS[index]
-        var blocked_collision := obstacles.get_node_or_null("BlockedRect%02d" % index) as CollisionShape2D
-        t.assert_true(blocked_collision != null, "blocked collision node exists: %d" % index)
+    for index in range(Layout.BUILDING_RECTS.size()):
+        var blocked := Layout.BUILDING_RECTS[index]
+        var blocked_collision := obstacles.get_node_or_null("BuildingRect%02d" % index) as CollisionShape2D
+        t.assert_true(blocked_collision != null, "building collision node exists: %d" % index)
         if blocked_collision != null:
             var blocked_shape := blocked_collision.shape as RectangleShape2D
-            t.assert_true(blocked_shape != null, "blocked collision is a rectangle: %d" % index)
+            t.assert_true(blocked_shape != null, "building collision is a rectangle: %d" % index)
             if blocked_shape != null:
                 var expected_position := Vector2(
                     (blocked.position.x + blocked.size.x / 2.0) * 16.0,
                     (blocked.position.y + blocked.size.y / 2.0) * 16.0
                 )
                 var expected_size := Vector2(blocked.size.x * 16.0, blocked.size.y * 16.0)
-                t.assert_eq(blocked_collision.position, expected_position, "blocked collision position matches layout: %d" % index)
-                t.assert_eq(blocked_shape.size, expected_size, "blocked collision size matches layout: %d" % index)
+                t.assert_eq(blocked_collision.position, expected_position, "building collision position matches layout: %d" % index)
+                t.assert_eq(blocked_shape.size, expected_size, "building collision size matches layout: %d" % index)
+    for index in range(Layout.GARDEN_BED_RECTS.size()):
+        var bed := Layout.GARDEN_BED_RECTS[index]
+        var bed_collision := obstacles.get_node_or_null("GardenBedRect%02d" % index) as CollisionShape2D
+        t.assert_true(bed_collision != null, "garden-bed collision node exists: %d" % index)
+        if bed_collision != null:
+            t.assert_eq(
+                (bed_collision.shape as RectangleShape2D).size,
+                Vector2(bed.size.x * 16.0, bed.size.y * 16.0),
+                "garden-bed collision size matches layout: %d" % index
+            )
+    var lake_collision := obstacles.get_node_or_null("LakeCollision") as CollisionPolygon2D
+    t.assert_true(lake_collision != null, "irregular lake has polygon collision")
+    if lake_collision != null:
+        t.assert_eq(lake_collision.polygon, Layout.polygon_to_world(Layout.LAKE_POLYGON), "lake collision follows shoreline")
     for index in range(Layout.TREE_CELLS.size()):
         var tree_collision := obstacles.get_node("TreeCollision%02d" % index) as CollisionShape2D
         t.assert_true(tree_collision != null, "tree collision node exists: %d" % index)
         if tree_collision != null:
             t.assert_eq(tree_collision.position, Layout.to_world(Layout.TREE_CELLS[index]), "tree collision position matches cell")
             t.assert_eq((tree_collision.shape as RectangleShape2D).size, Vector2(16, 16), "tree collision footprint is one tile")
-    for index in range(Layout.BENCH_CELLS.size()):
-        var bench_collision := obstacles.get_node("BenchCollision%02d" % index) as CollisionShape2D
-        t.assert_true(bench_collision != null, "bench collision node exists: %d" % index)
-        if bench_collision != null:
-            t.assert_eq(bench_collision.position, Layout.to_world(Layout.BENCH_CELLS[index]), "bench collision position matches cell")
-            t.assert_eq((bench_collision.shape as RectangleShape2D).size, Vector2(16, 16), "bench collision footprint is one tile")
-
     var flowers := world.get_node("Props/Flowers")
     t.assert_eq(flowers.get_child_count(), Layout.FLOWER_CELLS.size(), "world renders every flower cell")
     for flower in flowers.get_children():

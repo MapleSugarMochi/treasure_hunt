@@ -1,0 +1,190 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1020" viewBox="0 0 1600 1020">
+  <defs>
+    <pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse">
+      <path d="M 24 0 L 0 0 0 24" fill="none" stroke="#527D45" stroke-opacity="0.12" stroke-width="1"/>
+    </pattern>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#172018" flood-opacity="0.28"/>
+    </filter>
+    <style>
+      .title { font: 700 38px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #F8F1DC; }
+      .subtitle { font: 400 18px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #C5CEB4; }
+      .panel-title { font: 700 24px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #F8F1DC; }
+      .panel-copy { font: 400 15px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #C5CEB4; }
+      .map-label { font: 700 13px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #3B302B; text-anchor: middle; }
+      .map-label-light { font: 700 12px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #F8F1DC; text-anchor: middle; }
+      .chip { font: 700 14px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #1C241D; }
+      .card-title { font: 700 19px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #F8F1DC; }
+      .card-copy { font: 400 15px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #C5CEB4; }
+      .metric { font: 700 23px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #F0BD46; }
+      .metric-label { font: 400 13px "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; fill: #AEB9A0; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1020" fill="#172018"/>
+  <circle cx="1435" cy="-70" r="300" fill="#527D45" opacity="0.10"/>
+  <circle cx="115" cy="970" r="260" fill="#61A1A5" opacity="0.08"/>
+
+  <text x="64" y="62" class="title">校园寻宝 · 地图布局讨论板 01</text>
+  <text x="64" y="94" class="subtitle">先定空间骨架，再改 Godot。比例均为 96 × 72 格；黄点是宝箱候选点，蓝点是出生点。</text>
+  <rect x="1327" y="43" width="209" height="42" rx="21" fill="#F0BD46"/>
+  <text x="1360" y="70" class="chip">本轮：选择路线气质</text>
+
+  <!-- Current layout panel -->
+  <g filter="url(#shadow)">
+    <rect x="48" y="128" width="716" height="540" rx="24" fill="#222D24" stroke="#39483A" stroke-width="2"/>
+  </g>
+  <text x="80" y="169" class="panel-title">现状｜十字主轴 + 放射支路</text>
+  <text x="80" y="197" class="panel-copy">优点：方向直接　问题：中心过强、边角割裂、南区两块障碍形成长绕行</text>
+
+  <g transform="translate(108 216) scale(5.45)">
+    <rect width="96" height="72" rx="2" fill="#8EB361" stroke="#A8C878" stroke-width="0.7"/>
+    <rect width="96" height="72" fill="url(#grid)"/>
+    <!-- current paths -->
+    <g fill="none" stroke="#D2AE6E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M2 36 L94 36"/>
+      <path d="M48 2 L48 70"/>
+      <path d="M4 23 L31 25 L48 36"/>
+      <path d="M48 36 L70 28 L92 24"/>
+      <path d="M48 36 L65 47 L93 68"/>
+      <path d="M48 36 L34 52 L29 68"/>
+    </g>
+    <rect x="42" y="31" width="13" height="11" rx="1" fill="#E8CF91"/>
+    <!-- current blocked zones -->
+    <g stroke="#3B302B" stroke-width="0.8">
+      <rect x="5" y="4" width="25" height="13" rx="1" fill="#E9D3A5"/>
+      <rect x="6" y="5" width="23" height="3" fill="#A6533E" stroke="none"/>
+      <rect x="63" y="6" width="26" height="12" rx="1" fill="#E9D3A5"/>
+      <rect x="64" y="7" width="24" height="3" fill="#A6533E" stroke="none"/>
+      <rect x="70" y="49" width="20" height="15" rx="1" fill="#E9D3A5"/>
+      <rect x="71" y="50" width="18" height="3" fill="#A6533E" stroke="none"/>
+      <rect x="6" y="48" width="22" height="17" rx="3" fill="#61A1A5"/>
+      <path d="M8 53 C13 50 19 56 26 52 M8 59 C14 56 20 62 26 58" fill="none" stroke="#8BC7B6" stroke-width="0.8"/>
+      <rect x="35" y="8" width="6" height="12" rx="2" fill="#527D45"/>
+      <rect x="52" y="51" width="5" height="12" rx="2" fill="#527D45"/>
+    </g>
+    <!-- treasure candidates -->
+    <g fill="#F0BD46" stroke="#3B302B" stroke-width="0.45">
+      <circle cx="3" cy="22" r="1.25"/><circle cx="11" cy="21" r="1.25"/><circle cx="21" cy="22" r="1.25"/><circle cx="31" cy="20" r="1.25"/>
+      <circle cx="45" cy="18" r="1.25"/><circle cx="56" cy="20" r="1.25"/><circle cx="68" cy="22" r="1.25"/><circle cx="82" cy="21" r="1.25"/>
+      <circle cx="92" cy="24" r="1.25"/><circle cx="6" cy="31" r="1.25"/><circle cx="18" cy="32" r="1.25"/><circle cx="29" cy="30" r="1.25"/>
+      <circle cx="39" cy="29" r="1.25"/><circle cx="52" cy="28" r="1.25"/><circle cx="64" cy="30" r="1.25"/><circle cx="76" cy="31" r="1.25"/>
+      <circle cx="89" cy="33" r="1.25"/><circle cx="4" cy="40" r="1.25"/><circle cx="15" cy="41" r="1.25"/><circle cx="26" cy="39" r="1.25"/>
+      <circle cx="37" cy="42" r="1.25"/><circle cx="47" cy="44" r="1.25"/><circle cx="59" cy="41" r="1.25"/><circle cx="71" cy="40" r="1.25"/>
+      <circle cx="84" cy="42" r="1.25"/><circle cx="93" cy="39" r="1.25"/><circle cx="3" cy="68" r="1.25"/><circle cx="31" cy="53" r="1.25"/>
+      <circle cx="40" cy="55" r="1.25"/><circle cx="48" cy="66" r="1.25"/><circle cx="61" cy="56" r="1.25"/><circle cx="67" cy="66" r="1.25"/>
+      <circle cx="93" cy="55" r="1.25"/><circle cx="34" cy="3" r="1.25"/><circle cx="48" cy="4" r="1.25"/><circle cx="57" cy="4" r="1.25"/>
+      <circle cx="3" cy="3" r="1.25"/><circle cx="93" cy="3" r="1.25"/><circle cx="34" cy="68" r="1.25"/><circle cx="93" cy="68" r="1.25"/>
+    </g>
+    <circle cx="48" cy="36" r="2" fill="#315F82" stroke="#F8F1DC" stroke-width="0.6"/>
+  </g>
+
+  <rect x="83" y="611" width="617" height="37" rx="18" fill="#172018" opacity="0.9"/>
+  <text x="102" y="635" class="panel-copy">观察：宝箱点覆盖均匀，但“路线体验”主要是从中心沿直线走到外围。</text>
+
+  <!-- Proposed layout panel -->
+  <g filter="url(#shadow)">
+    <rect x="796" y="128" width="756" height="540" rx="24" fill="#222D24" stroke="#F0BD46" stroke-width="2"/>
+  </g>
+  <text x="828" y="169" class="panel-title">草案 A｜环形四区 + 中央活动场</text>
+  <text x="828" y="197" class="panel-copy">目标：路线有选择但不迷路；每 8–12 秒遇到一个清晰地标；适合 2–3 分钟展会体验</text>
+
+  <g transform="translate(870 216) scale(5.45)">
+    <rect width="96" height="72" rx="2" fill="#8EB361" stroke="#A8C878" stroke-width="0.7"/>
+    <rect width="96" height="72" fill="url(#grid)"/>
+    <!-- proposed ring road -->
+    <g fill="none" stroke="#D2AE6E" stroke-width="5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 22 C12 29 12 45 21 53 C33 64 65 64 79 53 C90 44 90 29 79 21 C66 13 34 13 20 22 Z"/>
+      <path d="M48 15 L48 29 M48 43 L48 61"/>
+      <path d="M16 36 L37 36 M59 36 L86 36"/>
+    </g>
+    <!-- central event plaza -->
+    <rect x="37" y="28" width="22" height="16" rx="3" fill="#E8CF91" stroke="#3B302B" stroke-width="0.8"/>
+    <path d="M42 33 H54 M42 39 H54" stroke="#D2AE6E" stroke-width="1" opacity="0.75"/>
+    <!-- proposed landmarks -->
+    <g stroke="#3B302B" stroke-width="0.8">
+      <rect x="5" y="5" width="25" height="12" rx="1" fill="#E9D3A5"/>
+      <rect x="6" y="6" width="23" height="3" fill="#A6533E" stroke="none"/>
+      <rect x="66" y="5" width="25" height="12" rx="1" fill="#E9D3A5"/>
+      <rect x="67" y="6" width="23" height="3" fill="#A6533E" stroke="none"/>
+      <rect x="6" y="52" width="20" height="12" rx="1" fill="#E9D3A5"/>
+      <rect x="7" y="53" width="18" height="3" fill="#A6533E" stroke="none"/>
+      <rect x="72" y="52" width="19" height="12" rx="1" fill="#E9D3A5"/>
+      <rect x="73" y="53" width="17" height="3" fill="#A6533E" stroke="none"/>
+      <path d="M8 27 C12 22 24 23 28 29 C31 35 27 43 17 44 C7 43 4 34 8 27 Z" fill="#61A1A5"/>
+      <path d="M9 31 C14 28 21 34 28 30 M9 38 C15 35 21 41 27 37" fill="none" stroke="#8BC7B6" stroke-width="0.8"/>
+      <circle cx="78" cy="34" r="7" fill="#527D45"/>
+      <circle cx="83" cy="39" r="5" fill="#6F914D"/>
+    </g>
+    <!-- balanced candidate zones -->
+    <g fill="#F0BD46" stroke="#3B302B" stroke-width="0.45">
+      <circle cx="3" cy="23" r="1.25"/><circle cx="11" cy="21" r="1.25"/><circle cx="22" cy="21" r="1.25"/><circle cx="33" cy="18" r="1.25"/>
+      <circle cx="43" cy="20" r="1.25"/><circle cx="54" cy="20" r="1.25"/><circle cx="65" cy="19" r="1.25"/><circle cx="76" cy="21" r="1.25"/>
+      <circle cx="90" cy="23" r="1.25"/><circle cx="4" cy="31" r="1.25"/><circle cx="31" cy="28" r="1.25"/><circle cx="64" cy="28" r="1.25"/>
+      <circle cx="91" cy="31" r="1.25"/><circle cx="4" cy="40" r="1.25"/><circle cx="31" cy="42" r="1.25"/><circle cx="65" cy="42" r="1.25"/>
+      <circle cx="92" cy="41" r="1.25"/><circle cx="6" cy="48" r="1.25"/><circle cx="18" cy="48" r="1.25"/><circle cx="30" cy="52" r="1.25"/>
+      <circle cx="40" cy="52" r="1.25"/><circle cx="55" cy="52" r="1.25"/><circle cx="66" cy="49" r="1.25"/><circle cx="83" cy="47" r="1.25"/>
+      <circle cx="92" cy="50" r="1.25"/><circle cx="29" cy="63" r="1.25"/><circle cx="39" cy="64" r="1.25"/><circle cx="50" cy="66" r="1.25"/>
+      <circle cx="61" cy="64" r="1.25"/><circle cx="70" cy="62" r="1.25"/><circle cx="4" cy="68" r="1.25"/><circle cx="92" cy="68" r="1.25"/>
+      <circle cx="4" cy="4" r="1.25"/><circle cx="35" cy="4" r="1.25"/><circle cx="48" cy="4" r="1.25"/><circle cx="61" cy="4" r="1.25"/>
+      <circle cx="92" cy="4" r="1.25"/><circle cx="34" cy="68" r="1.25"/><circle cx="66" cy="68" r="1.25"/><circle cx="92" cy="57" r="1.25"/>
+    </g>
+    <circle cx="48" cy="36" r="2" fill="#315F82" stroke="#F8F1DC" stroke-width="0.6"/>
+    <!-- numbered callouts -->
+    <g fill="#172018" stroke="#F8F1DC" stroke-width="0.5">
+      <circle cx="48" cy="27" r="2.3"/><circle cx="15" cy="25" r="2.3"/><circle cx="82" cy="31" r="2.3"/><circle cx="48" cy="58" r="2.3"/>
+    </g>
+  </g>
+
+  <g class="map-label-light">
+    <text x="1132" y="370">1</text><text x="952" y="359">2</text><text x="1317" y="392">3</text><text x="1132" y="538">4</text>
+  </g>
+  <rect x="831" y="611" width="685" height="37" rx="18" fill="#172018" opacity="0.9"/>
+  <text x="850" y="635" class="panel-copy">1 中央活动场　2 水景记忆点　3 林地捷径　4 南门缓冲区</text>
+
+  <!-- Decision cards -->
+  <text x="64" y="721" class="panel-title">请你先拍板 4 件事</text>
+  <text x="64" y="750" class="panel-copy">直接回复“1A、2B、3A、4保留湖”即可；也可以在图上描述你想移动的区域。</text>
+
+  <g transform="translate(48 776)">
+    <rect width="360" height="174" rx="20" fill="#222D24" stroke="#39483A" stroke-width="2"/>
+    <circle cx="32" cy="33" r="16" fill="#F0BD46"/><text x="27" y="39" class="chip">1</text>
+    <text x="60" y="40" class="card-title">路线骨架</text>
+    <text x="24" y="76" class="card-copy">A　环形主路（草案，推荐）</text>
+    <text x="24" y="105" class="card-copy">B　保留十字轴，仅重排建筑</text>
+    <text x="24" y="134" class="card-copy">C　更自由、更多岔路的探索型</text>
+    <text x="24" y="158" class="metric-label">影响：迷路概率 / 路线重复感</text>
+  </g>
+
+  <g transform="translate(430 776)">
+    <rect width="360" height="174" rx="20" fill="#222D24" stroke="#39483A" stroke-width="2"/>
+    <circle cx="32" cy="33" r="16" fill="#61A1A5"/><text x="27" y="39" class="chip">2</text>
+    <text x="60" y="40" class="card-title">探索难度</text>
+    <text x="24" y="76" class="card-copy">A　轻松：主路一眼能懂</text>
+    <text x="24" y="105" class="card-copy">B　适中：地标之间有小绕路</text>
+    <text x="24" y="134" class="card-copy">C　挑战：建筑后方藏点更多</text>
+    <text x="24" y="158" class="metric-label">建议展会短局选 B</text>
+  </g>
+
+  <g transform="translate(812 776)">
+    <rect width="360" height="174" rx="20" fill="#222D24" stroke="#39483A" stroke-width="2"/>
+    <circle cx="32" cy="33" r="16" fill="#D87943"/><text x="27" y="39" class="chip">3</text>
+    <text x="60" y="40" class="card-title">视觉气质</text>
+    <text x="24" y="76" class="card-copy">A　校园花园：湖、树、花坛为主</text>
+    <text x="24" y="105" class="card-copy">B　科技节：广场、展台、导视为主</text>
+    <text x="24" y="134" class="card-copy">C　两者各半</text>
+    <text x="24" y="158" class="metric-label">影响：后续需要新增哪些美术素材</text>
+  </g>
+
+  <g transform="translate(1194 776)">
+    <rect width="358" height="174" rx="20" fill="#222D24" stroke="#39483A" stroke-width="2"/>
+    <circle cx="32" cy="33" r="16" fill="#A6533E"/><text x="27" y="39" class="chip">4</text>
+    <text x="60" y="40" class="card-title">必须保留</text>
+    <text x="24" y="76" class="card-copy">告诉我哪些不能动：</text>
+    <text x="24" y="105" class="card-copy">湖 / 教学楼 / 凉亭 / 中央广场</text>
+    <text x="24" y="134" class="card-copy">或是否要贴近真实校园平面</text>
+    <text x="24" y="158" class="metric-label">这会决定草案 A 的下一轮形状</text>
+  </g>
+
+  <text x="48" y="989" class="metric-label">设计原则：不改变 96×72 尺寸与 40 个候选点数量；最终仍会做可达性、净空和碰撞测试。</text>
+</svg>

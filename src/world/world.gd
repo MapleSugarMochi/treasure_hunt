@@ -4,17 +4,20 @@ extends Node2D
 const WorldLayout = preload("res://src/world/world_layout.gd")
 const TILE_SIZE := 16
 var path_segments: Array[PackedVector2Array] = [
-    PackedVector2Array([Vector2(2, 36), Vector2(94, 36)]),
-    PackedVector2Array([Vector2(48, 2), Vector2(48, 70)]),
-    PackedVector2Array([Vector2(4, 23), Vector2(31, 25), Vector2(48, 36)]),
-    PackedVector2Array([Vector2(48, 36), Vector2(70, 28), Vector2(92, 24)]),
-    PackedVector2Array([Vector2(48, 36), Vector2(65, 47), Vector2(93, 68)]),
-    PackedVector2Array([Vector2(48, 36), Vector2(34, 52), Vector2(29, 68)]),
+    PackedVector2Array([
+        Vector2(18, 21), Vector2(31, 20), Vector2(48, 19), Vector2(64, 20),
+        Vector2(78, 21), Vector2(86, 27), Vector2(90, 34), Vector2(89, 41),
+        Vector2(84, 48), Vector2(73, 54), Vector2(60, 56), Vector2(48, 56),
+        Vector2(36, 54), Vector2(31, 52), Vector2(27, 47), Vector2(18, 45),
+        Vector2(12, 39), Vector2(9, 32), Vector2(12, 25), Vector2(18, 21),
+    ]),
+    PackedVector2Array([Vector2(48, 19), Vector2(48, 28)]),
+    PackedVector2Array([Vector2(58, 36), Vector2(90, 36)]),
+    PackedVector2Array([Vector2(48, 44), Vector2(48, 56)]),
+    PackedVector2Array([Vector2(38, 36), Vector2(12, 36)]),
 ]
 const TREE_CELLS: Array[Vector2i] = WorldLayout.TREE_CELLS
-const BENCH_CELLS: Array[Vector2i] = WorldLayout.BENCH_CELLS
 const TREE_REGIONS: Array[Rect2] = [Rect2(96, 0, 64, 96), Rect2(160, 0, 64, 96)]
-const BENCH_REGION := Rect2(208, 96, 48, 32)
 
 @onready var ground: TileMapLayer = $Ground
 @onready var paths: TileMapLayer = $Paths
@@ -53,13 +56,17 @@ func _paint_ground() -> void:
             ground.set_cell(Vector2i(x, y), source_id, variant)
 
 func _paint_paths() -> void:
-    for polyline in path_segments:
+    for path_index in range(path_segments.size()):
+        var polyline := path_segments[path_index]
+        var radius := 2 if path_index == 0 else 1
         for index in range(polyline.size() - 1):
-            _paint_corridor(Vector2i(polyline[index]), Vector2i(polyline[index + 1]), 2)
-    for y in range(31, 42):
-        for x in range(42, 55):
+            _paint_corridor(Vector2i(polyline[index]), Vector2i(polyline[index + 1]), radius)
+    for y in range(WorldLayout.PLAZA_RECT.position.y, WorldLayout.PLAZA_RECT.end.y):
+        for x in range(WorldLayout.PLAZA_RECT.position.x, WorldLayout.PLAZA_RECT.end.x):
             if WorldLayout.is_walkable(Vector2i(x, y)):
                 paths.set_cell(Vector2i(x, y), source_id, Vector2i(1, 0))
+    _paint_corridor(Vector2i(81, 55), Vector2i(81, 69), 1)
+    _paint_corridor(Vector2i(70, 63), Vector2i(91, 63), 1)
 
 func _paint_corridor(from_cell: Vector2i, to_cell: Vector2i, radius: int) -> void:
     var delta := to_cell - from_cell
@@ -74,18 +81,17 @@ func _paint_corridor(from_cell: Vector2i, to_cell: Vector2i, radius: int) -> voi
                     paths.set_cell(cell, source_id, Vector2i(1, 0))
 
 func _paint_lake() -> void:
-    var lake := WorldLayout.BLOCKED_RECTS[3]
-    for y in range(lake.position.y, lake.end.y):
-        for x in range(lake.position.x, lake.end.x):
-            details.set_cell(Vector2i(x, y), source_id, Vector2i(2, 0))
+    for y in range(WorldLayout.HEIGHT):
+        for x in range(WorldLayout.WIDTH):
+            var cell := Vector2i(x, y)
+            if WorldLayout.is_lake_cell(cell):
+                details.set_cell(cell, source_id, Vector2i(2, 0))
 
 func _add_prop_sprites() -> void:
     var texture: Texture2D = load("res://assets/generated/props.png")
     for index in range(TREE_CELLS.size()):
         var region: Rect2 = TREE_REGIONS[index % TREE_REGIONS.size()]
         _add_region_sprite(texture, region, WorldLayout.to_world(TREE_CELLS[index]), index)
-    for index in range(BENCH_CELLS.size()):
-        _add_region_sprite(texture, BENCH_REGION, WorldLayout.to_world(BENCH_CELLS[index]), 100 + index)
 
 func _add_region_sprite(texture: Texture2D, region: Rect2, world_position: Vector2, order: int) -> void:
     var sprite := Sprite2D.new()
@@ -128,23 +134,30 @@ func _add_flower_decorations() -> void:
         flowers.add_child(flower)
 
 func _add_collisions() -> void:
-    for index in range(WorldLayout.BLOCKED_RECTS.size()):
-        var blocked := WorldLayout.BLOCKED_RECTS[index]
-        var shape := RectangleShape2D.new()
-        shape.size = Vector2(blocked.size.x * TILE_SIZE, blocked.size.y * TILE_SIZE)
-        var collision := CollisionShape2D.new()
-        collision.name = "BlockedRect%02d" % index
-        collision.shape = shape
-        collision.position = Vector2(
-            (blocked.position.x + blocked.size.x / 2.0) * TILE_SIZE,
-            (blocked.position.y + blocked.size.y / 2.0) * TILE_SIZE
-        )
-        obstacles.add_child(collision)
+    for index in range(WorldLayout.BUILDING_RECTS.size()):
+        _add_rect_collision(WorldLayout.BUILDING_RECTS[index], "BuildingRect%02d" % index)
+    for index in range(WorldLayout.GARDEN_BED_RECTS.size()):
+        _add_rect_collision(WorldLayout.GARDEN_BED_RECTS[index], "GardenBedRect%02d" % index)
+    var lake_collision := CollisionPolygon2D.new()
+    lake_collision.name = "LakeCollision"
+    lake_collision.polygon = WorldLayout.polygon_to_world(WorldLayout.LAKE_POLYGON)
+    lake_collision.set_meta("irregular_lake", true)
+    obstacles.add_child(lake_collision)
     for index in range(TREE_CELLS.size()):
         _add_prop_collision(TREE_CELLS[index], "TreeCollision%02d" % index)
-    for index in range(BENCH_CELLS.size()):
-        _add_prop_collision(BENCH_CELLS[index], "BenchCollision%02d" % index)
     _add_boundary_collisions()
+
+func _add_rect_collision(blocked: Rect2i, collision_name: String) -> void:
+    var shape := RectangleShape2D.new()
+    shape.size = Vector2(blocked.size.x * TILE_SIZE, blocked.size.y * TILE_SIZE)
+    var collision := CollisionShape2D.new()
+    collision.name = collision_name
+    collision.shape = shape
+    collision.position = Vector2(
+        (blocked.position.x + blocked.size.x / 2.0) * TILE_SIZE,
+        (blocked.position.y + blocked.size.y / 2.0) * TILE_SIZE
+    )
+    obstacles.add_child(collision)
 
 func _add_prop_collision(cell: Vector2i, collision_name: String) -> void:
     var shape := RectangleShape2D.new()
@@ -178,8 +191,21 @@ func _draw() -> void:
     var wall := Color("e9d3a5")
     var roof := Color("a6533e")
     var outline := Color("3b302b")
-    for index in [0, 1, 2]:
-        var blocked := WorldLayout.BLOCKED_RECTS[index]
+
+    var garden := Rect2(
+        Vector2(WorldLayout.GARDEN_RECT.position * TILE_SIZE),
+        Vector2(WorldLayout.GARDEN_RECT.size * TILE_SIZE)
+    )
+    draw_rect(garden, Color("a8c878"))
+    draw_rect(garden, Color("527d45"), false, 4.0)
+    for bed in WorldLayout.GARDEN_BED_RECTS:
+        var bed_rect := Rect2(Vector2(bed.position * TILE_SIZE), Vector2(bed.size * TILE_SIZE))
+        draw_rect(bed_rect, Color("527d45"))
+        draw_rect(bed_rect, outline, false, 2.0)
+    draw_rect(Rect2(Vector2(80 * TILE_SIZE, 57 * TILE_SIZE), Vector2(3 * TILE_SIZE, 13 * TILE_SIZE)), Color("e8cf91"))
+    draw_rect(Rect2(Vector2(70 * TILE_SIZE, 62 * TILE_SIZE), Vector2(22 * TILE_SIZE, 3 * TILE_SIZE)), Color("e8cf91"))
+
+    for blocked in WorldLayout.BUILDING_RECTS:
         var rect := Rect2(
             Vector2(blocked.position.x * TILE_SIZE, blocked.position.y * TILE_SIZE),
             Vector2(blocked.size.x * TILE_SIZE, blocked.size.y * TILE_SIZE)
@@ -187,6 +213,10 @@ func _draw() -> void:
         draw_rect(rect, outline)
         draw_rect(rect.grow(-6.0), wall)
         draw_rect(Rect2(rect.position + Vector2(6, 6), Vector2(rect.size.x - 12, 20)), roof)
+
+    var lake_outline := WorldLayout.polygon_to_world(WorldLayout.LAKE_POLYGON)
+    lake_outline.append(lake_outline[0])
+    draw_polyline(lake_outline, outline, 4.0)
     draw_rect(Rect2(0, 34 * TILE_SIZE, 2 * TILE_SIZE, 6 * TILE_SIZE), outline)
     draw_rect(Rect2(94 * TILE_SIZE, 34 * TILE_SIZE, 2 * TILE_SIZE, 6 * TILE_SIZE), outline)
 

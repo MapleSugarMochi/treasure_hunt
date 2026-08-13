@@ -188,8 +188,6 @@ func _props(tree_sources: Array[Image]) -> Image:
     var tree_source_rect := Rect2i(0, 0, 64, 96)
     image.blit_rect(tree_sources[0], tree_source_rect, Vector2i(96, 0))
     image.blit_rect(tree_sources[1], tree_source_rect, Vector2i(160, 0))
-    _rect(image, Rect2i(210, 102, 45, 10), C.outline)
-    _rect(image, Rect2i(213, 96, 39, 8), C.path)
     return image
 
 func _player() -> Image:
