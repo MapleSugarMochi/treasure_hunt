@@ -7,6 +7,10 @@ const EXPECTED := {
     "treasure.png": Vector2i(96, 32),
     "ui.png": Vector2i(96, 32),
 }
+const HEART_TEXTURES := {
+    "heart-full.png": true,
+    "heart-empty.png": false,
+}
 
 const FONT_PATH := "res://assets/fonts/NotoSansCJKsc-Regular.otf"
 const PALETTE_PATH := "res://assets/source/palette.md"
@@ -59,8 +63,6 @@ const KEY_REGIONS := {
     "ui.png": [
         {"label": "compass_arrow", "rect": Rect2i(0, 0, 32, 32)},
         {"label": "celebration_sparkle", "rect": Rect2i(32, 0, 32, 32)},
-        {"label": "heart_full", "rect": Rect2i(64, 0, 16, 16)},
-        {"label": "heart_empty", "rect": Rect2i(80, 0, 16, 16)},
     ],
 }
 
@@ -94,6 +96,8 @@ func _initialize() -> void:
             pixel_result.opaque,
             pixel_result.colors,
         ])
+    for file_name in HEART_TEXTURES:
+        failures += _validate_heart_texture(file_name, HEART_TEXTURES[file_name])
     failures += _validate_font()
     print("ART HUMAN REVIEW required: inspect every atlas at 800% with a controller or human; this validator does not claim visual approval.")
     print("ART RESULT failures=%d" % failures)
@@ -123,6 +127,54 @@ func _validate_pixels(file_name: String, image: Image, approved_rgb: Dictionary)
                 push_error("Disallowed color in %s at (%d,%d): #%06x" % [file_name, x, y, rgb])
                 failures += 1
     return {"failures": failures, "opaque": opaque, "colors": colors.size()}
+
+func _validate_heart_texture(file_name: String, should_be_red: bool) -> int:
+    var failures := 0
+    var path := "res://assets/generated/%s" % file_name
+    var image := Image.load_from_file(ProjectSettings.globalize_path(path))
+    if image == null or image.is_empty():
+        push_error("Missing heart texture: %s" % path)
+        return 1
+    if image.get_size() != Vector2i(16, 16):
+        push_error("Wrong heart texture size for %s: %s" % [path, image.get_size()])
+        return 1
+    var opaque := 0
+    var transparent := 0
+    var red_pixels := 0
+    var grey_pixels := 0
+    for y in range(image.get_height()):
+        for x in range(image.get_width()):
+            var pixel := image.get_pixel(x, y)
+            var alpha := int(round(pixel.a * 255.0))
+            if alpha == 0:
+                transparent += 1
+                continue
+            if alpha != 255:
+                push_error("Semi-transparent heart pixel in %s at (%d,%d)" % [file_name, x, y])
+                failures += 1
+                continue
+            opaque += 1
+            var red := int(round(pixel.r * 255.0))
+            var green := int(round(pixel.g * 255.0))
+            var blue := int(round(pixel.b * 255.0))
+            if red > green * 1.30 and red > blue * 1.30:
+                red_pixels += 1
+            if red == green and green == blue:
+                grey_pixels += 1
+    if opaque == 0:
+        push_error("Blank heart texture: %s" % path)
+        failures += 1
+    if transparent == 0:
+        push_error("Heart texture lacks transparent padding: %s" % path)
+        failures += 1
+    if should_be_red and red_pixels == 0:
+        push_error("Full heart lacks red source pixels: %s" % path)
+        failures += 1
+    if not should_be_red and grey_pixels != opaque:
+        push_error("Dimmed heart is not entirely grayscale: %s" % path)
+        failures += 1
+    print("ART HEART %s opaque=%d transparent=%d red=%d grey=%d" % [file_name, opaque, transparent, red_pixels, grey_pixels])
+    return failures
 
 func _load_palette() -> Dictionary:
     var failures := 0

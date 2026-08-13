@@ -33,8 +33,7 @@ func run(t: SceneTree) -> void:
     t.assert_true(ui.failure_pending, "first wrong answer starts delayed failure")
     t.assert_eq(main.lives, GameConfig.STARTING_LIVES - 1, "wrong click depletes one life immediately")
     var second_heart := ui.get_node("HeartsContainer/Heart2") as TextureRect
-    var second_heart_texture := second_heart.texture as AtlasTexture
-    t.assert_eq(second_heart_texture.region, Rect2(80, 0, 16, 16), "wrong click empties one heart immediately")
+    t.assert_eq(second_heart.texture.resource_path, "res://assets/generated/heart-empty.png", "wrong click dims one heart immediately")
     t.assert_true(main.current_treasure == first_treasure, "failure feedback does not replace treasure early")
     ui.call("_on_failure_timeout")
     t.assert_eq(flow.state, GameFlow.State.SEARCHING, "first wrong answer returns to search")

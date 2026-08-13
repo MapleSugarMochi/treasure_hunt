@@ -1,6 +1,8 @@
 extends SceneTree
 
 const OUT := "res://assets/generated"
+const HEART_SOURCE_PATH := "res://assets/generated/heart.jpg"
+const HEART_TEXTURE_SIZE := Vector2i(16, 16)
 const TREE_SOURCE_PATHS := [
     "res://assets/source/trees/orange-tree-reference.png",
     "res://assets/source/trees/gold-tree-reference.png",
@@ -30,6 +32,14 @@ func _initialize() -> void:
         return
     var tree_sources: Array[Image] = tree_result.images
     var failures := 0
+    var heart_textures := _heart_textures()
+    if heart_textures.is_empty():
+        failures += 1
+    else:
+        var full_heart: Image = heart_textures["full"]
+        var empty_heart: Image = heart_textures["empty"]
+        failures += _save_png(full_heart, "heart-full.png")
+        failures += _save_png(empty_heart, "heart-empty.png")
     failures += _save_png(_terrain(), "terrain.png")
     failures += _save_png(_props(tree_sources), "props.png")
     failures += _save_png(_player(), "player.png")
@@ -75,6 +85,72 @@ func _load_tree_sources() -> Dictionary:
         else:
             images.append(source)
     return {"failures": failures, "images": images}
+
+func _heart_textures() -> Dictionary:
+    if not FileAccess.file_exists(HEART_SOURCE_PATH):
+        push_error("Missing heart source image: %s" % HEART_SOURCE_PATH)
+        return {}
+    var source := Image.load_from_file(ProjectSettings.globalize_path(HEART_SOURCE_PATH))
+    if source == null or source.is_empty():
+        push_error("Unreadable heart source image: %s" % HEART_SOURCE_PATH)
+        return {}
+    var bounds := _heart_bounds(source)
+    if bounds.size.x <= 0 or bounds.size.y <= 0:
+        push_error("No red heart foreground found in: %s" % HEART_SOURCE_PATH)
+        return {}
+    var crop_rect := _square_crop(bounds, source.get_size())
+    var isolated := _new_image(crop_rect.size)
+    for y in range(crop_rect.size.y):
+        for x in range(crop_rect.size.x):
+            var source_pixel := source.get_pixel(crop_rect.position.x + x, crop_rect.position.y + y)
+            if _is_heart_foreground(source_pixel):
+                isolated.set_pixel(x, y, Color(source_pixel.r, source_pixel.g, source_pixel.b, 1.0))
+    isolated.resize(HEART_TEXTURE_SIZE.x, HEART_TEXTURE_SIZE.y, Image.INTERPOLATE_NEAREST)
+    return {"full": isolated, "empty": _dimmed_heart(isolated)}
+
+func _heart_bounds(image: Image) -> Rect2i:
+    var min_x := image.get_width()
+    var min_y := image.get_height()
+    var max_x := -1
+    var max_y := -1
+    for y in range(image.get_height()):
+        for x in range(image.get_width()):
+            if not _is_heart_foreground(image.get_pixel(x, y)):
+                continue
+            min_x = mini(min_x, x)
+            min_y = mini(min_y, y)
+            max_x = maxi(max_x, x)
+            max_y = maxi(max_y, y)
+    if max_x < min_x or max_y < min_y:
+        return Rect2i()
+    return Rect2i(min_x, min_y, max_x - min_x + 1, max_y - min_y + 1)
+
+func _square_crop(bounds: Rect2i, image_size: Vector2i) -> Rect2i:
+    var side := maxi(bounds.size.x, bounds.size.y)
+    var center := bounds.position + Vector2i(bounds.size.x / 2, bounds.size.y / 2)
+    var x := clampi(center.x - side / 2, 0, image_size.x - side)
+    var y := clampi(center.y - side / 2, 0, image_size.y - side)
+    return Rect2i(x, y, side, side)
+
+func _is_heart_foreground(pixel: Color) -> bool:
+    var red := int(round(pixel.r * 255.0))
+    var green := int(round(pixel.g * 255.0))
+    var blue := int(round(pixel.b * 255.0))
+    var red_fill := red >= 80 and red > green * 1.30 and red > blue * 1.30
+    var dark_outline := red <= 60 and green <= 60 and blue <= 60
+    return red_fill or dark_outline
+
+func _dimmed_heart(full: Image) -> Image:
+    var dimmed := _new_image(full.get_size())
+    for y in range(full.get_height()):
+        for x in range(full.get_width()):
+            var pixel := full.get_pixel(x, y)
+            if pixel.a <= 0.0:
+                continue
+            var luminance := int(round((pixel.r * 0.2126 + pixel.g * 0.7152 + pixel.b * 0.0722) * 255.0 * 0.42))
+            var shade := clampi(maxi(luminance, 28), 0, 255)
+            dimmed.set_pixel(x, y, Color8(shade, shade, shade, 255))
+    return dimmed
 
 func _new_image(size: Vector2i) -> Image:
     var image := Image.create(size.x, size.y, false, Image.FORMAT_RGBA8)
@@ -159,49 +235,4 @@ func _ui() -> Image:
     _rect(image, Rect2i(45, 3, 4, 26), C.nav)
     _rect(image, Rect2i(34, 14, 26, 4), C.nav)
     _rect(image, Rect2i(39, 8, 16, 16), C.path_light)
-    _draw_heart(image, Vector2i(64, 0), C.orange, C.outline)
-    _draw_heart(image, Vector2i(80, 0), C.outline, C.outline, false)
     return image
-
-const HEART_MASK := [
-    "................",
-    "...XXX....XXX...",
-    "..XXXXX..XXXXX..",
-    ".XXXXXXXXXXXXXX.",
-    ".XXXXXXXXXXXXXX.",
-    ".XXXXXXXXXXXXXX.",
-    ".XXXXXXXXXXXXXX.",
-    "..XXXXXXXXXXXX..",
-    "..XXXXXXXXXXXX..",
-    "...XXXXXXXXXX...",
-    "....XXXXXXXX....",
-    ".....XXXXXX.....",
-    "......XXXX......",
-    ".......XX.......",
-    "................",
-    "................",
-]
-
-const HEART_NEIGHBORS: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
-
-func _draw_heart(image: Image, origin: Vector2i, fill: Color, outline: Color, use_fill: bool = true) -> void:
-    var size := Vector2i(HEART_MASK[0].length(), HEART_MASK.size())
-    for y in range(size.y):
-        var row: String = HEART_MASK[y]
-        for x in range(size.x):
-            if row[x] != "X":
-                continue
-            var pixel := origin + Vector2i(x, y)
-            var is_border := false
-            for offset in HEART_NEIGHBORS:
-                var neighbor: Vector2i = Vector2i(x, y) + offset
-                if neighbor.x < 0 or neighbor.x >= size.x or neighbor.y < 0 or neighbor.y >= size.y:
-                    is_border = true
-                    break
-                if HEART_MASK[neighbor.y][neighbor.x] != "X":
-                    is_border = true
-                    break
-            if is_border:
-                image.set_pixelv(pixel, outline)
-            elif use_fill:
-                image.set_pixelv(pixel, fill)

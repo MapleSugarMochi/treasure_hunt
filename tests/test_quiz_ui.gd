@@ -149,24 +149,16 @@ func _assert_hearts(t: SceneTree, ui: GameUI, hearts_container: Control) -> void
     ui.set_lives(3)
     t.assert_true(hearts_container.visible, "set_hearts_visible reveals the hearts container")
     for h in hearts:
-        t.assert_true(h.texture != null, "full life heart has a texture")
-        var atlas := h.texture as AtlasTexture
-        t.assert_true(atlas != null, "full life heart uses an atlas texture")
-        if atlas != null:
-            t.assert_eq(atlas.region, Rect2(64, 0, 16, 16), "full life heart uses the full heart region")
+        _assert_heart_texture(t, h.texture, "res://assets/generated/heart-full.png", "full life heart uses the supplied red heart")
 
     ui.set_lives(1)
-    t.assert_true(hearts[0].texture != null, "first heart stays full at one life")
-    var first_atlas := hearts[0].texture as AtlasTexture
-    t.assert_true(first_atlas != null and first_atlas.region == Rect2(64, 0, 16, 16), "first heart keeps the full heart region")
+    _assert_heart_texture(t, hearts[0].texture, "res://assets/generated/heart-full.png", "first heart stays red at one life")
     for index in range(1, hearts.size()):
-        var empty_atlas := hearts[index].texture as AtlasTexture
-        t.assert_true(empty_atlas != null and empty_atlas.region == Rect2(80, 0, 16, 16), "heart %d becomes empty at one life" % index)
+        _assert_heart_texture(t, hearts[index].texture, "res://assets/generated/heart-empty.png", "heart %d becomes dimmed grey at one life" % index)
 
     ui.set_lives(0)
     for index in range(hearts.size()):
-        var empty_atlas := hearts[index].texture as AtlasTexture
-        t.assert_true(empty_atlas != null and empty_atlas.region == Rect2(80, 0, 16, 16), "heart %d is empty at zero lives" % index)
+        _assert_heart_texture(t, hearts[index].texture, "res://assets/generated/heart-empty.png", "heart %d is dimmed grey at zero lives" % index)
 
     ui.show_start()
     t.assert_true(not hearts_container.visible, "show_start hides hearts")
@@ -175,6 +167,13 @@ func _assert_hearts(t: SceneTree, ui: GameUI, hearts_container: Control) -> void
     ui.set_hearts_visible(true)
     ui.show_fatal_error("测试错误")
     t.assert_true(not hearts_container.visible, "show_fatal_error hides hearts")
+
+
+func _assert_heart_texture(t: SceneTree, texture: Texture2D, expected_path: String, message: String) -> void:
+    t.assert_true(texture != null, message)
+    if texture != null:
+        t.assert_eq(texture.resource_path, expected_path, message)
+        t.assert_eq(texture.get_size(), Vector2(16, 16), "heart textures fit the existing 16px slots")
 
 func _assert_game_over(t: SceneTree, ui: GameUI, game_over_overlay: Control, restart_timer: Timer) -> void:
     t.assert_true(not game_over_overlay.visible, "game over overlay starts hidden")

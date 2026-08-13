@@ -14,9 +14,8 @@ const CORRECT_COLOR := Color("2f7d55")
 const DEFAULT_BORDER_COLOR := Color("73839a")
 const WRONG_BORDER_COLOR := Color("f07b82")
 const CORRECT_BORDER_COLOR := Color("7bdca5")
-const HEART_FULL_REGION := Rect2(64, 0, 16, 16)
-const HEART_EMPTY_REGION := Rect2(80, 0, 16, 16)
-const HEART_TEXTURE := preload("res://assets/generated/ui.png")
+const HEART_FULL_TEXTURE := preload("res://assets/generated/heart-full.png")
+const HEART_EMPTY_TEXTURE := preload("res://assets/generated/heart-empty.png")
 
 @onready var start_overlay: Control = %StartOverlay
 @onready var quiz_overlay: Control = %QuizOverlay
@@ -35,17 +34,12 @@ const HEART_TEXTURE := preload("res://assets/generated/ui.png")
 var current_question: Dictionary = {}
 var quiz_settled := false
 var failure_pending := false
-var _heart_full_tex: AtlasTexture
-var _heart_empty_tex: AtlasTexture
-
 func _ready() -> void:
     celebration_timer.timeout.connect(_on_celebration_timeout)
     failure_timer.timeout.connect(_on_failure_timeout)
     restart_timer.timeout.connect(_on_restart_timeout)
     for index in range(answer_buttons.size()):
         answer_buttons[index].pressed.connect(_on_answer_pressed.bind(index))
-    _heart_full_tex = _make_heart_atlas(HEART_FULL_REGION)
-    _heart_empty_tex = _make_heart_atlas(HEART_EMPTY_REGION)
     set_lives(hearts.size())
     show_start()
 
@@ -138,7 +132,7 @@ func show_game_over() -> void:
 
 func set_lives(lives: int) -> void:
     for index in range(hearts.size()):
-        hearts[index].texture = _heart_full_tex if index < lives else _heart_empty_tex
+        hearts[index].texture = HEART_FULL_TEXTURE if index < lives else HEART_EMPTY_TEXTURE
 
 func set_hearts_visible(visible: bool) -> void:
     hearts_container.visible = visible
@@ -194,12 +188,6 @@ func _set_disabled_style(button: Button, background: Color, border: Color) -> vo
     style.corner_radius_bottom_left = 6
     button.add_theme_stylebox_override("disabled", style)
     button.add_theme_color_override("font_disabled_color", Color("ffffff"))
-
-func _make_heart_atlas(region: Rect2) -> AtlasTexture:
-    var atlas := AtlasTexture.new()
-    atlas.atlas = HEART_TEXTURE
-    atlas.region = region
-    return atlas
 
 func _is_valid_question(question: Dictionary) -> bool:
     if not question.has("prompt") or not question.prompt is String or question.prompt.is_empty():
