@@ -33,6 +33,7 @@ func _capture_all() -> void:
     await _save_viewport(viewport, "ai-quiz-initial-640x360.png")
 
     ui.answer_buttons[0].pressed.emit()
+    await process_frame
     await _save_viewport(viewport, "ai-quiz-failed-640x360.png")
 
     ui.show_quiz(question)
