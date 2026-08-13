@@ -7,8 +7,8 @@ const TREE_SOURCE_PATHS := [
     "res://assets/source/trees/gold-tree-reference.png",
 ]
 const EXPECTED_SOURCE_SHA256 := [
-    "f578cb18654ba2c14c7d663167ef7467c30f53f2c3e57f259278782a6f42627b",
-    "86c066a49c42777c3decba9381ad8c5c7c30a9808a65c23deda831a5b83bc0aa",
+    "21e9562b4648fd292fcdde9d4841b806eba2807c08d362167a642259e4529637",
+    "f94bfc707a47f41352da8c64469153162b6f4379806e42f4faefe8132f20270d",
 ]
 const MAX_ART_BOUNDS := [Vector2i(62, 87), Vector2i(62, 87)]
 const MIN_LOWER_CANOPY_WIDTH := [30, 24]
@@ -58,6 +58,8 @@ func run(t: SceneTree) -> void:
             if source != null and not source.is_empty():
                 t.assert_eq(source.get_size(), rect.size, "tree source sprite keeps the runtime size: %d" % index)
                 t.assert_true(_region_matches_source(image, rect, source), "tree atlas preserves the approved source pixels: %d" % index)
+                t.assert_eq(_enclosed_pinhole_count(source), 0, "tree edge has no enclosed transparent pinholes: %d" % index)
+                t.assert_eq(_weak_accent_edge_count(source), 0, "tree edge has no one-pixel accent spikes: %d" % index)
         var upper_highlights := _color_count_in_local_rect(
             image,
             rect,
@@ -203,5 +205,48 @@ func _color_count_in_local_rect(
         for local_x in range(local_rect.position.x, local_rect.end.x):
             var pixel := image.get_pixelv(region.position + Vector2i(local_x, local_y))
             if pixel.a > 0.0 and targets.has(pixel.to_rgba32()):
+                count += 1
+    return count
+
+func _enclosed_pinhole_count(image: Image) -> int:
+    var count := 0
+    for y in range(1, image.get_height() - 1):
+        for x in range(1, image.get_width() - 1):
+            var point := Vector2i(x, y)
+            if image.get_pixelv(point).a > 0.0:
+                continue
+            if (
+                image.get_pixelv(point + Vector2i.LEFT).a > 0.0
+                and image.get_pixelv(point + Vector2i.RIGHT).a > 0.0
+                and image.get_pixelv(point + Vector2i.UP).a > 0.0
+                and image.get_pixelv(point + Vector2i.DOWN).a > 0.0
+            ):
+                count += 1
+    return count
+
+func _weak_accent_edge_count(image: Image) -> int:
+    var count := 0
+    var outline := Color("3b302b").to_rgba32()
+    for y in range(image.get_height()):
+        for x in range(image.get_width()):
+            var point := Vector2i(x, y)
+            var pixel := image.get_pixelv(point)
+            if pixel.a <= 0.0 or pixel.to_rgba32() == outline:
+                continue
+            var neighbors := 0
+            for offset_y in range(-1, 2):
+                for offset_x in range(-1, 2):
+                    if offset_x == 0 and offset_y == 0:
+                        continue
+                    var neighbor := point + Vector2i(offset_x, offset_y)
+                    if (
+                        neighbor.x >= 0
+                        and neighbor.y >= 0
+                        and neighbor.x < image.get_width()
+                        and neighbor.y < image.get_height()
+                        and image.get_pixelv(neighbor).a > 0.0
+                    ):
+                        neighbors += 1
+            if neighbors <= 2:
                 count += 1
     return count
