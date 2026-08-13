@@ -43,9 +43,9 @@ const QUESTIONS := [
         "correct_index": 2,
     },
     {
-        "prompt": "对已经训练好的模型进行“微调”，主要目的是什么？",
-        "options": ["清除模型的全部知识", "让模型更适合某个特定任务或领域", "减少模型使用的颜色", "拿螺丝刀把模型拧小半圈"],
-        "correct_index": 1,
+        "prompt": "json是什么。",
+        "options": ["一种轻量级的数据交换格式", "一种图片压缩格式", "一种数据库管理系统", "Who's json"],
+        "correct_index": 0,
     },
     {
         "prompt": "AI Agent 与普通聊天模型相比，通常多了什么能力？",
