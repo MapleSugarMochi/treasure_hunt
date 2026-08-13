@@ -10,8 +10,16 @@ func run(t: SceneTree) -> void:
     if not ui is GameUI:
         return
     var quiz_overlay := ui.get_node_or_null("QuizOverlay") as Control
+    var quiz_card := ui.get_node("QuizOverlay/QuizCard") as Panel
+    var quiz_title := ui.get_node("QuizOverlay/QuizCard/QuizTitle") as Label
     var question_label := ui.get_node_or_null("QuizOverlay/QuizCard/QuestionLabel") as Label
     var feedback_label := ui.get_node_or_null("QuizOverlay/QuizCard/FeedbackLabel") as Label
+    var badges: Array[Label] = [
+        ui.get_node("QuizOverlay/QuizCard/AnswerA/Badge") as Label,
+        ui.get_node("QuizOverlay/QuizCard/AnswerB/Badge") as Label,
+        ui.get_node("QuizOverlay/QuizCard/AnswerC/Badge") as Label,
+        ui.get_node("QuizOverlay/QuizCard/AnswerD/Badge") as Label,
+    ]
     var buttons: Array[Button] = [
         ui.get_node_or_null("QuizOverlay/QuizCard/AnswerA") as Button,
         ui.get_node_or_null("QuizOverlay/QuizCard/AnswerB") as Button,
@@ -24,8 +32,11 @@ func run(t: SceneTree) -> void:
     var hearts_container := ui.get_node_or_null("HeartsContainer") as Control
 
     t.assert_true(quiz_overlay != null, "quiz overlay exists")
+    t.assert_true(quiz_card != null, "quiz card exists")
+    t.assert_true(quiz_title != null, "quiz title exists")
     t.assert_true(question_label != null and feedback_label != null, "quiz text labels exist")
     t.assert_true(buttons.all(func(button: Button) -> bool: return button != null), "quiz has four answer buttons")
+    t.assert_true(badges.all(func(badge: Label) -> bool: return badge != null), "quiz answer badges exist")
     t.assert_true(failure_timer != null, "quiz has a failure feedback timer")
     t.assert_true(restart_timer != null, "UI has a restart timer")
     t.assert_true(game_over_overlay != null, "UI has a game over overlay")
@@ -40,6 +51,19 @@ func run(t: SceneTree) -> void:
         if button == null:
             ui.free()
             return
+
+    t.assert_eq(quiz_card.position, Vector2(28, 20), "quiz card keeps a relaxed outer margin")
+    t.assert_eq(quiz_card.size, Vector2(584, 320), "quiz card uses the wide approved footprint")
+    t.assert_eq(quiz_title.get_theme_font_size("font_size"), 18, "quiz title uses the smaller display size")
+    t.assert_eq(question_label.get_theme_font_size("font_size"), 15, "question uses the smaller readable size")
+    t.assert_eq(feedback_label.get_theme_font_size("font_size"), 12, "feedback fits the compact header")
+    t.assert_eq(buttons[0].position.y, buttons[1].position.y, "A and B share the first row")
+    t.assert_eq(buttons[2].position.y, buttons[3].position.y, "C and D share the second row")
+    t.assert_true(buttons[0].position.x < buttons[1].position.x, "B sits to the right of A")
+    t.assert_true(buttons[2].position.x < buttons[3].position.x, "D sits to the right of C")
+    t.assert_true(buttons.all(func(button: Button) -> bool: return button.size == Vector2(258, 68)), "answer cards share the approved size")
+    t.assert_true(buttons.all(func(button: Button) -> bool: return button.autowrap_mode != TextServer.AUTOWRAP_OFF), "answer text wraps inside two-column cards")
+    t.assert_eq(badges.map(func(badge: Label) -> String: return badge.text), ["A", "B", "C", "D"], "answer cards expose separate letter badges")
 
     t.assert_true(not quiz_overlay.visible, "quiz starts hidden")
     t.assert_eq(quiz_overlay.mouse_filter, Control.MOUSE_FILTER_STOP, "quiz overlay captures mouse input")
@@ -71,8 +95,8 @@ func run(t: SceneTree) -> void:
     t.assert_true(quiz_overlay.visible, "show_quiz opens quiz")
     t.assert_eq(question_label.text, "测试题目？", "quiz renders prompt")
     t.assert_eq(feedback_label.text, "请选择一个答案（仅 1 次机会）", "quiz explains the single attempt")
-    t.assert_eq(buttons[0].text, "A. 错误选项", "first option has A prefix")
-    t.assert_eq(buttons[3].text, "D. 搞笑错误选项", "fourth option has D prefix")
+    t.assert_eq(buttons[0].text, "错误选项", "first option renders visible text without a letter prefix")
+    t.assert_eq(buttons[3].text, "搞笑错误选项", "fourth option renders visible text without a letter prefix")
     buttons[1].pressed.emit()
     t.assert_eq(correct_events, 1, "correct answer emits award once")
     t.assert_true(ui.quiz_settled, "correct answer settles quiz")
