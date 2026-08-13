@@ -24,6 +24,6 @@ Atlas contracts: `terrain.png` 128×32, `props.png` 256×128,
 `player.png` 72×128, `treasure.png` 96×32, `ui.png` 96×32.
 All hard edges align to integer pixels and use no antialiasing.
 
-`heart-full.png` and `heart-empty.png` are source-derived 16x16 life textures.
-They are validated separately from this shared atlas palette: the full heart preserves
-the supplied red artwork, while the empty heart uses an equal-channel dimmed grayscale.
+`heart-full.png` and `heart-empty.png` are hand-drawn 16x16 life textures.
+They are validated separately from this shared atlas palette: the full heart uses
+hard-edged red pixel art, while the empty heart uses the same Alpha mask in grayscale.

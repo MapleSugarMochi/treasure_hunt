@@ -99,6 +99,7 @@ func _initialize() -> void:
         ])
     for file_name in HEART_TEXTURES:
         failures += _validate_heart_texture(file_name, HEART_TEXTURES[file_name])
+    failures += _validate_heart_pair()
     failures += _validate_font()
     print("ART HUMAN REVIEW required: inspect every atlas at 800% with a controller or human; this validator does not claim visual approval.")
     print("ART RESULT failures=%d" % failures)
@@ -143,6 +144,7 @@ func _validate_heart_texture(file_name: String, should_be_red: bool) -> int:
     var transparent := 0
     var red_pixels := 0
     var grey_pixels := 0
+    var light_pixels := 0
     for y in range(image.get_height()):
         for x in range(image.get_width()):
             var pixel := image.get_pixel(x, y)
@@ -162,6 +164,8 @@ func _validate_heart_texture(file_name: String, should_be_red: bool) -> int:
                 red_pixels += 1
             if red == green and green == blue:
                 grey_pixels += 1
+            if red >= 220 and green >= 120 and blue >= 120:
+                light_pixels += 1
     if opaque == 0:
         push_error("Blank heart texture: %s" % path)
         failures += 1
@@ -171,11 +175,102 @@ func _validate_heart_texture(file_name: String, should_be_red: bool) -> int:
     if should_be_red and red_pixels == 0:
         push_error("Full heart lacks red source pixels: %s" % path)
         failures += 1
+    if should_be_red and light_pixels == 0:
+        push_error("Full heart lacks a light highlight: %s" % path)
+        failures += 1
     if not should_be_red and grey_pixels != opaque:
         push_error("Dimmed heart is not entirely grayscale: %s" % path)
         failures += 1
-    print("ART HEART %s opaque=%d transparent=%d red=%d grey=%d" % [file_name, opaque, transparent, red_pixels, grey_pixels])
+    var components := _opaque_component_count(image)
+    if components != 1:
+        push_error("Heart texture must contain one connected foreground in %s: components=%d" % [file_name, components])
+        failures += 1
+    if _has_transparent_hole(image):
+        push_error("Heart texture has an internal transparent hole: %s" % file_name)
+        failures += 1
+    print("ART HEART %s opaque=%d transparent=%d red=%d grey=%d light=%d components=%d" % [file_name, opaque, transparent, red_pixels, grey_pixels, light_pixels, components])
     return failures
+
+func _validate_heart_pair() -> int:
+    var full := Image.load_from_file(ProjectSettings.globalize_path("res://assets/generated/heart-full.png"))
+    var empty := Image.load_from_file(ProjectSettings.globalize_path("res://assets/generated/heart-empty.png"))
+    if full == null or empty == null or full.is_empty() or empty.is_empty():
+        push_error("Cannot compare heart Alpha masks")
+        return 1
+    if full.get_size() != empty.get_size():
+        push_error("Heart texture sizes do not match: full=%s empty=%s" % [full.get_size(), empty.get_size()])
+        return 1
+    var failures := 0
+    for y in range(full.get_height()):
+        for x in range(full.get_width()):
+            var full_alpha := int(round(full.get_pixel(x, y).a * 255.0))
+            var empty_alpha := int(round(empty.get_pixel(x, y).a * 255.0))
+            if full_alpha != empty_alpha:
+                push_error("Heart Alpha mismatch at (%d,%d): full=%d empty=%d" % [x, y, full_alpha, empty_alpha])
+                failures += 1
+    return failures
+
+func _opaque_component_count(image: Image) -> int:
+    var visited := {}
+    var components := 0
+    for y in range(image.get_height()):
+        for x in range(image.get_width()):
+            var start := Vector2i(x, y)
+            if visited.has(start) or image.get_pixelv(start).a <= 0.0:
+                continue
+            components += 1
+            var frontier: Array[Vector2i] = [start]
+            visited[start] = true
+            var cursor := 0
+            while cursor < frontier.size():
+                var point := frontier[cursor]
+                cursor += 1
+                for offset_y in range(-1, 2):
+                    for offset_x in range(-1, 2):
+                        if offset_x == 0 and offset_y == 0:
+                            continue
+                        var neighbor := point + Vector2i(offset_x, offset_y)
+                        if not _is_inside_image(image, neighbor) or visited.has(neighbor):
+                            continue
+                        if image.get_pixelv(neighbor).a <= 0.0:
+                            continue
+                        visited[neighbor] = true
+                        frontier.append(neighbor)
+    return components
+
+func _has_transparent_hole(image: Image) -> bool:
+    var outside := {}
+    var frontier: Array[Vector2i] = []
+    for x in range(image.get_width()):
+        _seed_transparent(image, Vector2i(x, 0), outside, frontier)
+        _seed_transparent(image, Vector2i(x, image.get_height() - 1), outside, frontier)
+    for y in range(image.get_height()):
+        _seed_transparent(image, Vector2i(0, y), outside, frontier)
+        _seed_transparent(image, Vector2i(image.get_width() - 1, y), outside, frontier)
+    var cursor := 0
+    var offsets := [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
+    while cursor < frontier.size():
+        var point := frontier[cursor]
+        cursor += 1
+        for offset in offsets:
+            _seed_transparent(image, point + offset, outside, frontier)
+    for y in range(image.get_height()):
+        for x in range(image.get_width()):
+            var point := Vector2i(x, y)
+            if image.get_pixelv(point).a <= 0.0 and not outside.has(point):
+                return true
+    return false
+
+func _seed_transparent(image: Image, point: Vector2i, visited: Dictionary, frontier: Array[Vector2i]) -> void:
+    if not _is_inside_image(image, point) or visited.has(point):
+        return
+    if image.get_pixelv(point).a > 0.0:
+        return
+    visited[point] = true
+    frontier.append(point)
+
+func _is_inside_image(image: Image, point: Vector2i) -> bool:
+    return point.x >= 0 and point.y >= 0 and point.x < image.get_width() and point.y < image.get_height()
 
 func _load_palette() -> Dictionary:
     var failures := 0
