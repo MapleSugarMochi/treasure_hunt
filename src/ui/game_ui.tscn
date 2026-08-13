@@ -290,7 +290,7 @@ mouse_filter = 2
 theme_override_colors/font_color = Color(0.86, 0.91, 0.96, 1)
 theme_override_fonts/font = ExtResource("3_font")
 theme_override_font_sizes/font_size = 15
-text = "请选择一个答案（共 2 次机会）"
+text = "请选择一个答案（仅 1 次机会）"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -383,6 +383,56 @@ texture_filter = 1
 texture = SubResource("AtlasTexture_particle")
 expand_mode = 1
 
+[node name="GameOverOverlay" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Backdrop" type="ColorRect" parent="GameOverOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0.02, 0.03, 0.05, 0.96)
+
+[node name="GameOverCard" type="Panel" parent="GameOverOverlay"]
+layout_mode = 0
+offset_left = 150.0
+offset_top = 130.0
+offset_right = 490.0
+offset_bottom = 230.0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_card")
+
+[node name="GameOverLabel" type="Label" parent="GameOverOverlay/GameOverCard"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_colors/font_color = Color(1, 0.82, 0.36, 1)
+theme_override_fonts/font = ExtResource("3_font")
+theme_override_font_sizes/font_size = 22
+text = "挑战失败，命数耗尽"
+horizontal_alignment = 1
+vertical_alignment = 1
+
 [node name="FatalErrorOverlay" type="Control" parent="."]
 unique_name_in_owner = true
 visible = false
@@ -425,10 +475,58 @@ theme_override_font_sizes/font_size = 22
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="HeartsContainer" type="Control" parent="."]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Heart0" type="TextureRect" parent="HeartsContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 24.0
+offset_bottom = 24.0
+mouse_filter = 2
+texture_filter = 1
+expand_mode = 1
+
+[node name="Heart1" type="TextureRect" parent="HeartsContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 28.0
+offset_top = 8.0
+offset_right = 44.0
+offset_bottom = 24.0
+mouse_filter = 2
+texture_filter = 1
+expand_mode = 1
+
+[node name="Heart2" type="TextureRect" parent="HeartsContainer"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 48.0
+offset_top = 8.0
+offset_right = 64.0
+offset_bottom = 24.0
+mouse_filter = 2
+texture_filter = 1
+expand_mode = 1
+
 [node name="CelebrationTimer" type="Timer" parent="."]
 wait_time = 4.0
 one_shot = true
 
 [node name="FailureTimer" type="Timer" parent="."]
 wait_time = 2.0
+one_shot = true
+
+[node name="RestartTimer" type="Timer" parent="."]
+wait_time = 3.0
 one_shot = true

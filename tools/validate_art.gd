@@ -5,7 +5,7 @@ const EXPECTED := {
     "props.png": Vector2i(256, 128),
     "player.png": Vector2i(72, 128),
     "treasure.png": Vector2i(96, 32),
-    "ui.png": Vector2i(64, 32),
+    "ui.png": Vector2i(96, 32),
 }
 
 const FONT_PATH := "res://assets/fonts/NotoSansCJKsc-Regular.otf"
@@ -59,6 +59,8 @@ const KEY_REGIONS := {
     "ui.png": [
         {"label": "compass_arrow", "rect": Rect2i(0, 0, 32, 32)},
         {"label": "celebration_sparkle", "rect": Rect2i(32, 0, 32, 32)},
+        {"label": "heart_full", "rect": Rect2i(64, 0, 16, 16)},
+        {"label": "heart_empty", "rect": Rect2i(80, 0, 16, 16)},
     ],
 }
 

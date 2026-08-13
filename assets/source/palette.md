@@ -21,5 +21,5 @@
 | 皮肤 | `#E8B88E` |
 
 Atlas contracts: `terrain.png` 128×32, `props.png` 256×128,
-`player.png` 72×128, `treasure.png` 96×32, `ui.png` 64×32.
+`player.png` 72×128, `treasure.png` 96×32, `ui.png` 96×32.
 All hard edges align to integer pixels and use no antialiasing.

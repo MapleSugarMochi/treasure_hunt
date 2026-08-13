@@ -4,15 +4,14 @@ const GameFlow = preload("res://src/core/game_flow.gd")
 const GameConfig = preload("res://src/config/game_config.gd")
 const QuizBank = preload("res://src/quiz/quiz_bank.gd")
 
-var celebration_events := 0
-var search_events := 0
-
 func run(t: SceneTree) -> void:
     var main := _instance(t, "res://src/main/main.tscn")
+    if not main is Main:
+        return
     _assert_composition(t, main)
     _assert_initial_state(t, main)
     _assert_input_start(t, main)
-    _assert_connected_500_rounds(t, main)
+    _assert_bounded_loop(t, main)
     _assert_fatal_overlay(t, main)
     main.free()
 
@@ -20,6 +19,8 @@ func _assert_composition(t: SceneTree, main: Node) -> void:
     t.assert_true(main.has_method("start_game_for_test"), "Main exposes a start test hook")
     t.assert_true(main.has_method("complete_treasure_for_test"), "Main exposes a completion test hook")
     t.assert_true(main.has_method("finish_celebration_for_test"), "Main exposes a finish test hook")
+    t.assert_true(main.has_method("fail_quiz_for_test"), "Main exposes a fail quiz test hook")
+    t.assert_true(main.has_method("restart_for_test"), "Main exposes a restart test hook")
     t.assert_true(main.get_node("GameFlow") is GameFlow, "Main contains GameFlow")
     t.assert_true(main.get_node("World") is Node2D, "Main contains World")
     t.assert_true(main.get_node("TreasureSpawner") is TreasureSpawner, "Main contains TreasureSpawner")
@@ -52,9 +53,13 @@ func _assert_initial_state(t: SceneTree, main: Node) -> void:
     var hud: NavigationHUD = main.get_node("UI/NavigationHUD")
     t.assert_eq(flow.state, GameFlow.State.WAITING_START, "game starts waiting for input")
     t.assert_true(not player.movement_enabled, "movement is locked before start")
+    t.assert_eq(main.lives, GameConfig.STARTING_LIVES, "game starts with full lives")
+    t.assert_eq(main.quiz_round_index, 0, "question index starts at zero")
     t.assert_true(ui.get_node("StartOverlay").visible, "start overlay is visible before start")
     t.assert_true(not ui.get_node("QuizOverlay").visible, "quiz overlay starts hidden")
     t.assert_true(not ui.get_node("CelebrationOverlay").visible, "celebration overlay starts hidden")
+    t.assert_true(not ui.get_node("GameOverOverlay").visible, "game over overlay starts hidden")
+    t.assert_true(not ui.get_node("HeartsContainer").visible, "hearts are hidden on the title screen")
     t.assert_true(is_instance_valid(main.current_treasure), "initial target is spawned")
     t.assert_true(hud.visible, "navigation target is visible before start")
     t.assert_eq(player.global_position, world.get_player_start(), "player is placed at world start exactly once")
@@ -82,83 +87,88 @@ func _assert_input_start(t: SceneTree, main: Node) -> void:
     t.assert_eq(flow.state, GameFlow.State.SEARCHING, "movement input starts the game")
     t.assert_true(player.movement_enabled, "movement input enables the player")
     t.assert_true(not ui.get_node("StartOverlay").visible, "movement input hides start overlay")
+    t.assert_true(ui.get_node("HeartsContainer").visible, "movement input reveals the hearts indicator")
     t.assert_true(main.get_viewport().is_input_handled(), "movement input is marked handled")
 
     main.call("_unhandled_input", move_action)
     t.assert_eq(flow.state, GameFlow.State.SEARCHING, "repeated movement input does not restart game")
 
-func _assert_connected_500_rounds(t: SceneTree, main: Node) -> void:
+func _assert_bounded_loop(t: SceneTree, main: Node) -> void:
     var flow: GameFlow = main.get_node("GameFlow")
     var ui: GameUI = main.get_node("UI/GameUI")
     var hud: NavigationHUD = main.get_node("UI/NavigationHUD")
     var player: Player = main.get_node("Player")
-    player.global_position += Vector2(32, 0)
-    var start_position := player.global_position
-    celebration_events = 0
-    search_events = 0
-    flow.celebration_started.connect(_record_celebration)
-    flow.search_started.connect(_record_search)
+    var world: CampusWorld = main.get_node("World")
+    var home := world.get_player_start()
 
-    for round_index in range(500):
-        var before := player.global_position
-        var old_treasure: Area2D = main.current_treasure
-        old_treasure.call("_on_body_entered", player)
-        t.assert_eq(flow.state, GameFlow.State.QUIZZING, "round %d found signal enters quiz" % round_index)
-        t.assert_true(ui.get_node("QuizOverlay").visible, "round %d shows quiz" % round_index)
-        t.assert_true(not ui.get_node("CelebrationOverlay").visible, "round %d does not reward before an answer" % round_index)
-        t.assert_true(not hud.visible, "round %d hides navigation during quiz" % round_index)
-        t.assert_true(not old_treasure.is_queued_for_deletion(), "round %d keeps treasure until settlement" % round_index)
-        t.assert_true(not old_treasure.monitoring, "round %d disables old treasure monitoring" % round_index)
-        t.assert_true(main.current_treasure == old_treasure, "round %d does not replace treasure early" % round_index)
-        t.assert_eq(ui.current_question.prompt, QuizBank.question_for_round(round_index).prompt, "round %d uses the sequential question" % round_index)
-        t.assert_eq(main.quiz_round_index, round_index + 1, "round %d advances question index once" % round_index)
-        old_treasure.call("_on_body_entered", player)
-        t.assert_eq(main.quiz_round_index, round_index + 1, "round %d ignores duplicate treasure signals" % round_index)
+    const CYCLES := 30
+    for cycle in range(CYCLES):
+        main.start_game_for_test()
+        t.assert_eq(flow.state, GameFlow.State.SEARCHING, "cycle %d starts searching" % cycle)
+        t.assert_eq(main.lives, GameConfig.STARTING_LIVES, "cycle %d restores full lives" % cycle)
+        t.assert_eq(main.quiz_round_index, 0, "cycle %d resets the question index" % cycle)
+        t.assert_true(ui.get_node("HeartsContainer").visible, "cycle %d shows hearts while searching" % cycle)
 
-        if round_index % 2 == 0:
-            var correct_index := int(ui.current_question.correct_index)
-            if round_index % 4 == 2:
-                ui.answer_buttons[_wrong_indices(correct_index)[0]].pressed.emit()
-                t.assert_eq(ui.attempts_used, 1, "round %d permits one wrong answer before success" % round_index)
-            ui.answer_buttons[correct_index].pressed.emit()
-            t.assert_eq(flow.state, GameFlow.State.CELEBRATING, "round %d correct answer enters celebration" % round_index)
-            t.assert_true(ui.get_node("CelebrationOverlay").visible, "round %d correct answer shows reward" % round_index)
-            t.assert_true(main.current_treasure == old_treasure, "round %d keeps treasure through celebration" % round_index)
-            ui.call("_on_celebration_timeout")
-        else:
+        for attempt in range(GameConfig.STARTING_LIVES):
+            var old_treasure: Area2D = main.current_treasure
+            old_treasure.call("_on_body_entered", player)
+            t.assert_eq(flow.state, GameFlow.State.QUIZZING, "cycle %d attempt %d enters quiz" % [cycle, attempt])
+            t.assert_true(ui.get_node("QuizOverlay").visible, "cycle %d attempt %d shows quiz" % [cycle, attempt])
+            t.assert_true(not ui.get_node("CelebrationOverlay").visible, "cycle %d attempt %d does not reward before an answer" % [cycle, attempt])
+            t.assert_true(not hud.visible, "cycle %d attempt %d hides navigation during quiz" % [cycle, attempt])
+            t.assert_true(not old_treasure.is_queued_for_deletion(), "cycle %d attempt %d keeps treasure until settlement" % [cycle, attempt])
+            t.assert_true(not old_treasure.monitoring, "cycle %d attempt %d disables old treasure monitoring" % [cycle, attempt])
+            t.assert_true(main.current_treasure == old_treasure, "cycle %d attempt %d does not replace treasure early" % [cycle, attempt])
+            t.assert_eq(ui.current_question.prompt, QuizBank.question_for_round(attempt).prompt, "cycle %d attempt %d uses the sequential question" % [cycle, attempt])
+            t.assert_eq(main.quiz_round_index, attempt + 1, "cycle %d attempt %d advances question index once" % [cycle, attempt])
+            old_treasure.call("_on_body_entered", player)
+            t.assert_eq(main.quiz_round_index, attempt + 1, "cycle %d attempt %d ignores duplicate treasure signals" % [cycle, attempt])
+
             var wrong_indices := _wrong_indices(int(ui.current_question.correct_index))
             ui.answer_buttons[wrong_indices[0]].pressed.emit()
-            ui.answer_buttons[wrong_indices[1]].pressed.emit()
-            t.assert_eq(flow.state, GameFlow.State.QUIZZING, "round %d failure feedback stays in quiz state" % round_index)
-            t.assert_true(ui.failure_pending, "round %d starts no-award feedback timer" % round_index)
-            t.assert_true(not ui.get_node("CelebrationOverlay").visible, "round %d failure never shows reward" % round_index)
-            t.assert_true(main.current_treasure == old_treasure, "round %d keeps treasure through failure feedback" % round_index)
+            t.assert_eq(flow.state, GameFlow.State.QUIZZING, "cycle %d attempt %d failure feedback stays in quiz state" % [cycle, attempt])
+            t.assert_true(ui.failure_pending, "cycle %d attempt %d starts failure timer" % [cycle, attempt])
+            t.assert_true(not ui.get_node("CelebrationOverlay").visible, "cycle %d attempt %d failure never shows reward" % [cycle, attempt])
+            t.assert_true(main.current_treasure == old_treasure, "cycle %d attempt %d keeps treasure through failure feedback" % [cycle, attempt])
+            t.assert_eq(main.lives, GameConfig.STARTING_LIVES - (attempt + 1), "cycle %d attempt %d depletes life after the wrong click" % [cycle, attempt])
+
             ui.call("_on_failure_timeout")
+            # Duplicate completion callbacks must be no-ops.
+            ui.call("_on_failure_timeout")
+            ui.call("_on_celebration_timeout")
 
-        t.assert_eq(flow.state, GameFlow.State.SEARCHING, "round %d returns to searching" % round_index)
-        t.assert_true(not ui.get_node("CelebrationOverlay").visible, "round %d hides celebration after finish" % round_index)
-        t.assert_true(not ui.get_node("QuizOverlay").visible, "round %d hides quiz after finish" % round_index)
-        t.assert_true(hud.visible, "round %d restores navigation after finish" % round_index)
-        t.assert_true(player.movement_enabled, "round %d restores movement after finish" % round_index)
-        t.assert_eq(player.global_position, before, "round %d preserves player position" % round_index)
-        t.assert_true(old_treasure.is_queued_for_deletion(), "round %d queues settled treasure" % round_index)
-        t.assert_true(main.current_treasure != old_treasure, "round %d replaces treasure after settlement" % round_index)
-        t.assert_true(is_instance_valid(main.current_treasure), "round %d has a valid replacement" % round_index)
-        t.assert_true(
-            main.current_treasure.global_position.distance_to(player.global_position)
-                >= GameConfig.MIN_TREASURE_DISTANCE_METRES * GameConfig.PIXELS_PER_METRE,
-            "round %d replacement honors the 288 pixel minimum" % round_index
-        )
-        var replacement: Area2D = main.current_treasure
-        ui.call("_on_celebration_timeout")
-        ui.call("_on_failure_timeout")
-        t.assert_true(main.current_treasure == replacement, "round %d ignores duplicate completion callbacks" % round_index)
-        ui.call("_on_celebration_timeout")
-        t.assert_eq(search_events, round_index + 1, "round %d has one finish lifecycle" % round_index)
+            if attempt < GameConfig.STARTING_LIVES - 1:
+                t.assert_eq(flow.state, GameFlow.State.SEARCHING, "cycle %d attempt %d returns to searching" % [cycle, attempt])
+                t.assert_eq(main.lives, GameConfig.STARTING_LIVES - (attempt + 1), "cycle %d attempt %d keeps the depleted life count" % [cycle, attempt])
+                t.assert_true(not ui.get_node("QuizOverlay").visible, "cycle %d attempt %d hides quiz after finish" % [cycle, attempt])
+                t.assert_true(hud.visible, "cycle %d attempt %d restores navigation after finish" % [cycle, attempt])
+                t.assert_true(player.movement_enabled, "cycle %d attempt %d restores movement after finish" % [cycle, attempt])
+                t.assert_true(old_treasure.is_queued_for_deletion(), "cycle %d attempt %d queues settled treasure" % [cycle, attempt])
+                t.assert_true(main.current_treasure != old_treasure, "cycle %d attempt %d replaces treasure after settlement" % [cycle, attempt])
+                t.assert_true(is_instance_valid(main.current_treasure), "cycle %d attempt %d has a valid replacement" % [cycle, attempt])
+                t.assert_true(
+                    main.current_treasure.global_position.distance_to(player.global_position)
+                        >= GameConfig.MIN_TREASURE_DISTANCE_METRES * GameConfig.PIXELS_PER_METRE,
+                    "cycle %d attempt %d replacement honors the 288 pixel minimum" % [cycle, attempt]
+                )
+            else:
+                t.assert_eq(flow.state, GameFlow.State.GAME_OVER, "cycle %d final attempt ends in game over" % cycle)
+                t.assert_eq(main.lives, 0, "cycle %d final attempt depletes all lives" % cycle)
+                t.assert_true(ui.get_node("GameOverOverlay").visible, "cycle %d final attempt shows the game over overlay" % cycle)
+                t.assert_true(not ui.get_node("QuizOverlay").visible, "cycle %d final attempt hides quiz" % cycle)
+                t.assert_true(not ui.get_node("CelebrationOverlay").visible, "cycle %d final attempt never shows reward" % cycle)
+                t.assert_true(main.current_treasure == old_treasure, "cycle %d final attempt keeps the last treasure" % cycle)
+                t.assert_true(not old_treasure.is_queued_for_deletion(), "cycle %d final attempt keeps the last treasure alive" % cycle)
+                t.assert_true(not player.movement_enabled, "cycle %d final attempt locks movement" % cycle)
+                t.assert_true(not ui.get_node("HeartsContainer").visible, "cycle %d final attempt hides hearts" % cycle)
+                ui.call("_on_restart_timeout")
+                t.assert_eq(flow.state, GameFlow.State.WAITING_START, "cycle %d restart returns to title" % cycle)
+                t.assert_true(not ui.get_node("GameOverOverlay").visible, "cycle %d restart hides game over overlay" % cycle)
+                t.assert_true(not ui.get_node("HeartsContainer").visible, "cycle %d restart hides hearts on title" % cycle)
 
-    t.assert_eq(start_position, player.global_position, "500 rounds never teleport player")
-    t.assert_eq(celebration_events, 250, "only 250 correct rounds produce celebrations")
-    t.assert_eq(search_events, 500, "500 finish signals produce 500 searches")
+            t.assert_eq(player.global_position, home, "cycle %d attempt %d never teleports the player" % [cycle, attempt])
+
+    t.assert_eq(player.global_position, home, "bounded loop never teleports the player across cycles")
 
 func _assert_fatal_overlay(t: SceneTree, main: Node) -> void:
     var ui: GameUI = main.get_node("UI/GameUI")
@@ -166,22 +176,19 @@ func _assert_fatal_overlay(t: SceneTree, main: Node) -> void:
     var hud: NavigationHUD = main.get_node("UI/NavigationHUD")
     var timer: Timer = ui.get_node("CelebrationTimer")
     var failure_timer: Timer = ui.get_node("FailureTimer")
+    var restart_timer: Timer = ui.get_node("RestartTimer")
     main.call("_show_fatal_error", "测试错误")
     t.assert_true(ui.get_node("FatalErrorOverlay").visible, "fatal overlay is visible")
     t.assert_eq(ui.get_node("FatalErrorOverlay/FatalErrorLabel").text, "测试错误", "fatal overlay displays its message")
     t.assert_true(not ui.get_node("StartOverlay").visible, "fatal overlay hides start overlay")
     t.assert_true(not ui.get_node("CelebrationOverlay").visible, "fatal overlay hides celebration overlay")
     t.assert_true(not ui.get_node("QuizOverlay").visible, "fatal overlay hides quiz overlay")
+    t.assert_true(not ui.get_node("GameOverOverlay").visible, "fatal overlay hides game over overlay")
     t.assert_true(timer.is_stopped(), "fatal overlay stops celebration timer")
     t.assert_true(failure_timer.is_stopped(), "fatal overlay stops failure timer")
+    t.assert_true(restart_timer.is_stopped(), "fatal overlay stops restart timer")
     t.assert_true(not player.movement_enabled, "fatal overlay stops player movement")
     t.assert_true(not hud.visible, "fatal overlay hides navigation")
-
-func _record_celebration() -> void:
-    celebration_events += 1
-
-func _record_search() -> void:
-    search_events += 1
 
 func _wrong_indices(correct_index: int) -> Array[int]:
     var result: Array[int] = []

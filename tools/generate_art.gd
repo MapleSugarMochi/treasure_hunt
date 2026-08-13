@@ -151,7 +151,7 @@ func _treasure() -> Image:
     return image
 
 func _ui() -> Image:
-    var image := _new_image(Vector2i(64, 32))
+    var image := _new_image(Vector2i(96, 32))
     _rect(image, Rect2i(4, 13, 20, 6), C.nav)
     _rect(image, Rect2i(20, 9, 5, 14), C.nav)
     _rect(image, Rect2i(25, 12, 3, 8), C.nav)
@@ -159,4 +159,49 @@ func _ui() -> Image:
     _rect(image, Rect2i(45, 3, 4, 26), C.nav)
     _rect(image, Rect2i(34, 14, 26, 4), C.nav)
     _rect(image, Rect2i(39, 8, 16, 16), C.path_light)
+    _draw_heart(image, Vector2i(64, 0), C.orange, C.outline)
+    _draw_heart(image, Vector2i(80, 0), C.outline, C.outline, false)
     return image
+
+const HEART_MASK := [
+    "................",
+    "...XXX....XXX...",
+    "..XXXXX..XXXXX..",
+    ".XXXXXXXXXXXXXX.",
+    ".XXXXXXXXXXXXXX.",
+    ".XXXXXXXXXXXXXX.",
+    ".XXXXXXXXXXXXXX.",
+    "..XXXXXXXXXXXX..",
+    "..XXXXXXXXXXXX..",
+    "...XXXXXXXXXX...",
+    "....XXXXXXXX....",
+    ".....XXXXXX.....",
+    "......XXXX......",
+    ".......XX.......",
+    "................",
+    "................",
+]
+
+const HEART_NEIGHBORS: Array[Vector2i] = [Vector2i.LEFT, Vector2i.RIGHT, Vector2i.UP, Vector2i.DOWN]
+
+func _draw_heart(image: Image, origin: Vector2i, fill: Color, outline: Color, use_fill: bool = true) -> void:
+    var size := Vector2i(HEART_MASK[0].length(), HEART_MASK.size())
+    for y in range(size.y):
+        var row: String = HEART_MASK[y]
+        for x in range(size.x):
+            if row[x] != "X":
+                continue
+            var pixel := origin + Vector2i(x, y)
+            var is_border := false
+            for offset in HEART_NEIGHBORS:
+                var neighbor: Vector2i = Vector2i(x, y) + offset
+                if neighbor.x < 0 or neighbor.x >= size.x or neighbor.y < 0 or neighbor.y >= size.y:
+                    is_border = true
+                    break
+                if HEART_MASK[neighbor.y][neighbor.x] != "X":
+                    is_border = true
+                    break
+            if is_border:
+                image.set_pixelv(pixel, outline)
+            elif use_fill:
+                image.set_pixelv(pixel, fill)

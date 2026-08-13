@@ -127,23 +127,34 @@ func _assert_hud_navigation(t: SceneTree, hud: Node) -> void:
 func _assert_game_ui_contract(t: SceneTree, ui: Node) -> void:
     t.assert_true(ui.has_method("show_start"), "UI exposes start state")
     t.assert_true(ui.has_method("play_celebration"), "UI exposes celebration")
+    t.assert_true(ui.has_method("show_game_over"), "UI exposes game over")
+    t.assert_true(ui.has_method("set_lives"), "UI exposes lives indicator")
+    t.assert_true(ui.has_method("set_hearts_visible"), "UI can toggle the hearts indicator")
     t.assert_eq(ui.mouse_filter, Control.MOUSE_FILTER_IGNORE, "UI ignores mouse input")
     var start_overlay := ui.get_node("StartOverlay") as Control
     var celebration_overlay := ui.get_node("CelebrationOverlay") as Control
+    var game_over_overlay := ui.get_node("GameOverOverlay") as Control
+    var hearts_container := ui.get_node("HeartsContainer") as Control
     t.assert_eq(start_overlay.mouse_filter, Control.MOUSE_FILTER_IGNORE, "start overlay ignores mouse input")
     t.assert_eq(celebration_overlay.mouse_filter, Control.MOUSE_FILTER_IGNORE, "celebration overlay ignores mouse input")
+    t.assert_eq(game_over_overlay.mouse_filter, Control.MOUSE_FILTER_IGNORE, "game over overlay ignores mouse input")
+    t.assert_eq(hearts_container.mouse_filter, Control.MOUSE_FILTER_IGNORE, "hearts container ignores mouse input")
     t.assert_true(start_overlay.visible, "UI starts on the start overlay")
     t.assert_true(not celebration_overlay.visible, "celebration overlay starts hidden")
+    t.assert_true(not game_over_overlay.visible, "game over overlay starts hidden")
+    t.assert_true(not hearts_container.visible, "hearts start hidden")
 
     var title := ui.get_node("StartOverlay/StartCard/Title") as Label
     var hint := ui.get_node("StartOverlay/StartCard/StartHint") as Label
     var found := ui.get_node("CelebrationOverlay/CelebrationCard/FoundLabel") as Label
     var reward := ui.get_node("CelebrationOverlay/CelebrationCard/RewardLabel") as Label
+    var game_over_label := ui.get_node("GameOverOverlay/GameOverCard/GameOverLabel") as Label
     t.assert_eq(title.text, "校园寻宝", "start title uses the required text")
     t.assert_eq(hint.text, "按 WASD 或方向键开始", "start hint uses the required text")
     t.assert_eq(found.text, "找到宝藏！", "celebration title uses the required text")
     t.assert_eq(reward.text, "回答正确，请领取奖品", "celebration reward requires a correct answer")
-    for label in [title, hint, found, reward]:
+    t.assert_eq(game_over_label.text, "挑战失败，命数耗尽", "game over label uses the required text")
+    for label in [title, hint, found, reward, game_over_label]:
         var font := label.get_theme_font("font") as FontFile
         t.assert_true(font != null, "Chinese labels use a bundled font")
         if font != null:
@@ -164,18 +175,24 @@ func _assert_game_ui_contract(t: SceneTree, ui: Node) -> void:
             t.assert_eq(particle_texture.region, Rect2(32, 0, 32, 32), "gold particles use the ui spark region")
 
     var timer := ui.get_node("CelebrationTimer") as Timer
+    var restart_timer := ui.get_node("RestartTimer") as Timer
     t.assert_approx(timer.wait_time, 4.0, 0.0001, "celebration is exactly four seconds")
     t.assert_true(timer.one_shot, "celebration timer fires once")
+    t.assert_approx(restart_timer.wait_time, 3.0, 0.0001, "restart delay is three seconds")
+    t.assert_true(restart_timer.one_shot, "restart timer fires once")
     ui.show_start()
-    t.assert_true(start_overlay.visible and not celebration_overlay.visible, "show_start makes overlays mutually exclusive")
+    t.assert_true(start_overlay.visible and not celebration_overlay.visible and not game_over_overlay.visible, "show_start makes overlays mutually exclusive")
     ui.play_celebration()
-    t.assert_true(not start_overlay.visible and celebration_overlay.visible, "play_celebration makes overlays mutually exclusive")
+    t.assert_true(not start_overlay.visible and celebration_overlay.visible and not game_over_overlay.visible, "play_celebration makes overlays mutually exclusive")
     t.assert_true(timer.time_left > 3.5, "play_celebration starts a fresh four-second timer")
     celebration_count = 0
     ui.celebration_finished.connect(_record_celebration_finished)
     ui.call("_on_celebration_timeout")
     t.assert_true(not celebration_overlay.visible, "timeout hides celebration overlay")
     t.assert_eq(celebration_count, 1, "timeout emits celebration_finished once")
+    ui.show_game_over()
+    t.assert_true(game_over_overlay.visible and not celebration_overlay.visible and not start_overlay.visible, "show_game_over makes overlays mutually exclusive")
+    t.assert_true(restart_timer.time_left > 2.5, "show_game_over starts a fresh restart timer")
 
 func _record_found() -> void:
     found_count += 1
