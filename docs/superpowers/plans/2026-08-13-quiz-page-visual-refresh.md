@@ -19,14 +19,16 @@
 
 ---
 
-### Task 1: Lock the approved quiz layout into the UI contract
+### Task 1: Implement the approved 2×2 quiz layout with a red-green test cycle
 
 **Files:**
 - Modify: `tests/test_quiz_ui.gd`
+- Modify: `src/ui/game_ui.tscn`
+- Modify: `src/ui/game_ui.gd`
 
 **Interfaces:**
 - Consumes: `res://src/ui/game_ui.tscn` and its existing `QuizOverlay/QuizCard` node paths.
-- Produces: executable assertions for the card safe area, 2×2 geometry, font scale, wrapped text, and A-D badges.
+- Produces: the unchanged `show_quiz(question: Dictionary) -> void` and `_on_answer_pressed(option_index: int) -> void` behavior in the approved layout, plus executable assertions for its geometry, type scale, wrapping, and A-D badges.
 
 - [ ] **Step 1: Write the failing layout assertions**
 
@@ -67,18 +69,7 @@ Run:
 
 Expected: non-zero exit with failures for the old `QuizCard` position/size, old one-column button geometry, missing `Badge` nodes, old font sizes, or prefixed answer text.
 
-### Task 2: Implement the wide 2×2 challenge card
-
-**Files:**
-- Modify: `src/ui/game_ui.tscn`
-- Modify: `src/ui/game_ui.gd`
-- Test: `tests/test_quiz_ui.gd`
-
-**Interfaces:**
-- Consumes: question dictionaries with `prompt`, four `options`, and `correct_index`.
-- Produces: the unchanged `show_quiz(question: Dictionary) -> void` and `_on_answer_pressed(option_index: int) -> void` behavior in the approved layout.
-
-- [ ] **Step 1: Update static scene geometry and visual resources**
+- [ ] **Step 3: Update static scene geometry and visual resources**
 
 Set `QuizCard` to `(28, 20)` with size `(584, 320)`. Add a gold question-mark emblem in the header, left-align the 18 px title and 15 px wrapped question, and place the 12 px feedback label at the right side of the header.
 
@@ -93,7 +84,7 @@ AnswerD: Rect2(298, 204, 258, 68)
 
 Each button uses a 12 px font, left alignment, automatic word wrapping, and a 48 px left content margin. Add a mouse-ignoring child `Label` named `Badge` with the literal text A, B, C, or D.
 
-- [ ] **Step 2: Align runtime answer and disabled styling**
+- [ ] **Step 4: Align runtime answer and disabled styling**
 
 Change answer population to keep the visible option text separate from the letter badge:
 
@@ -114,13 +105,20 @@ style.content_margin_top = 8.0
 style.content_margin_bottom = 8.0
 ```
 
-- [ ] **Step 3: Run the full suite and verify green**
+- [ ] **Step 5: Run the full suite and verify green**
 
 Run the full Godot test command from Task 1.
 
 Expected: exit 0 and `RESULT assertions=<N> failures=0`.
 
-### Task 3: Capture and inspect all answer states
+- [ ] **Step 6: Commit the tested layout**
+
+```powershell
+git add tests/test_quiz_ui.gd src/ui/game_ui.tscn src/ui/game_ui.gd
+git commit -m "feat: redesign quiz answer layout"
+```
+
+### Task 2: Capture and inspect all answer states
 
 **Files:**
 - Modify: `docs/qa/evidence/ai-quiz-initial-640x360.png`
@@ -156,3 +154,10 @@ git status --short
 ```
 
 Expected: tests exit 0 with zero failures, `git diff --check` prints nothing, and status lists only the approved UI, test, evidence, spec, and plan files.
+
+- [ ] **Step 4: Commit refreshed evidence**
+
+```powershell
+git add docs/qa/evidence/ai-quiz-initial-640x360.png docs/qa/evidence/ai-quiz-failed-640x360.png docs/qa/evidence/ai-quiz-reward-640x360.png
+git commit -m "test: refresh quiz UI evidence"
+```
